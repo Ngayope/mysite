@@ -37,13 +37,16 @@ def reply_to_line(reply_token, text):
     url = "https://api.line.me/v2/bot/message/reply"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+        "Authorization": "Bearer " + LINE_CHANNEL_ACCESS_TOKEN
     }
     body = {
         "replyToken": reply_token,
         "messages": [{"type": "text", "text": text}]
     }
-    requests.post(url, headers=headers, json=body)
+
+    res = requests.post(url, headers=headers, json=body)
+    print("LINE API response:", res.status_code, res.text)  # ← ここ追加
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
