@@ -1,15 +1,14 @@
 from flask import Flask, request, jsonify
 import os
 import requests
-import openai
+from openai import OpenAI
 
 app = Flask(__name__)
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-openai.api_key = OPENAI_API_KEY
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -28,9 +27,7 @@ def webhook():
             user_text = event["message"]["text"]
             reply_token = event["replyToken"]
 
-            # ChatGPTに渡して診断っぽい返答を生成
             reply_message = generate_ai_reply(user_text)
-
             reply_to_line(reply_token, reply_message)
 
     return "ok"
@@ -39,15 +36,17 @@ def generate_ai_reply(user_text):
     prompt = f"""
     あなたは「やりたいこと診断AI」です。
     ユーザーの入力から、その人が実現したいことをやさしく言語化してください。
-    また「タイプ診断」と「次の一歩」も添えて、短くキャッチーにまとめてください。
+    また「タイプ診断」と「次の一歩」も添えてください。
 
     ユーザーの入力: {user_text}
     """
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "system", "content": prompt}]
+        messages=[
+            {"role": "system", "content": prompt}
+        ]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 def reply_to_line(reply_token, text):
     url = "https://api.line.me/v2/bot/message/reply"
