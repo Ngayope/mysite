@@ -41,7 +41,7 @@ def generate_ai_reply(user_text):
     ユーザーの入力: {user_text}
     """
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {"role": "system", "content": prompt}
         ]
