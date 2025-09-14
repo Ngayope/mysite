@@ -41,6 +41,7 @@ def webhook():
 
     return "ok"
 
+
 def handle_message(user_id, user_text):
     state = user_states.get(user_id, {"step": 0, "answers": [], "used": False})
 
@@ -64,4 +65,48 @@ def handle_message(user_id, user_text):
 
         # 診断済みにマーク
         state["used"] = True
-        user_states[user_id] = sta_]()_
+        user_states[user_id] = state   # ← 修正済み
+
+        return result
+
+
+def generate_ai_reply(answers):
+    """OpenAI GPTで診断結果を生成"""
+    prompt = f"""
+以下はユーザーの回答です：
+{answers}
+
+この人の自己実現診断をしてください。
+出力フォーマット：
+- 強み（2行以内）
+- 課題（2行以内）
+- 次の一歩（1行）
+
+日本語で簡潔に、ポジティブな表現で書いてください。
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-5-nano",  # 軽量モデルで十分
+        messages=[
+            {"role": "system", "content": "あなたは優秀なコーチです。"},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=200,
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content.strip()
+
+
+def reply_to_line(reply_token, message):
+    """LINEに返信"""
+    url = "https://api.line.me/v2/bot/message/reply"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+    }
+    payload = {
+        "replyToken": reply_token,
+        "messages": [{"type": "text", "text": message}]
+    }
+    requests.post(url, headers=headers, json=payload)
