@@ -42,56 +42,26 @@ def webhook():
     return "ok"
 
 def handle_message(user_id, user_text):
-    # ユーザーの進行状況を確認
-    state = user_states.get(user_id, {"step": 0, "answers": []})
+    state = user_states.get(user_id, {"step": 0, "answers": [], "used": False})
+
+    # すでに診断済みの場合はブロック
+    if state.get("used", False):
+        return "診断は1回のみ無料です✨ もっと深掘りしたい場合は、詳細診断やコーチングプランをご利用ください！"
 
     if state["step"] < len(questions):
-        # 回答を保存
-        if state["step"] > 0:  # 最初の入力はスキップして次の質問に進める
+        if state["step"] > 0:  # 回答を保存
             state["answers"].append(user_text)
 
-        # 次の質問を出す
+        # 次の質問を返す
         question = questions[state["step"]]
         state["step"] += 1
         user_states[user_id] = state
         return question
     else:
-        # 全部答えたら診断を生成
+        # 最後の回答を保存
         state["answers"].append(user_text)
         result = generate_ai_reply(state["answers"])
-        # 状態をリセット
-        user_states[user_id] = {"step": 0, "answers": []}
-        return result
 
-def generate_ai_reply(answers):
-    prompt = f"""
-    あなたは「やりたいこと診断AI」です。
-    以下の回答を参考に、ユーザーが実現したいことをまとめてください。
-    また「タイプ診断」と「次の一歩」も添えてください。
-
-    回答: {answers}
-    """
-    response = client.chat.completions.create(
-        model="gpt-5-nano",
-        messages=[
-            {"role": "system", "content": "あなたは診断AIです。結果を短くキャッチーにまとめてください。"},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message.content
-
-def reply_to_line(reply_token, text):
-    url = "https://api.line.me/v2/bot/message/reply"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + LINE_CHANNEL_ACCESS_TOKEN
-    }
-    body = {
-        "replyToken": reply_token,
-        "messages": [{"type": "text", "text": text}]
-    }
-    res = requests.post(url, headers=headers, json=body)
-    print("LINE API response:", res.status_code, res.text)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+        # 診断済みにマーク
+        state["used"] = True
+        user_states[user_id] = sta_]()_
