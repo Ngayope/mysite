@@ -10,6 +10,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+# ユーザーごとの状態を保存
+user_states = {}
+questions = [
+    "最近ちょっと楽しかったことは？",
+    "休日にもっと時間があったら何してみたい？",
+    "子どもの頃に好きだったことは？"
+]
+
 @app.route("/", methods=["GET"])
 def home():
     return "LINE Bot is running!"
@@ -24,26 +32,50 @@ def webhook():
 
     for event in data["events"]:
         if event["type"] == "message" and event["message"]["type"] == "text":
+            user_id = event["source"]["userId"]
             user_text = event["message"]["text"]
             reply_token = event["replyToken"]
 
-            reply_message = generate_ai_reply(user_text)
+            reply_message = handle_message(user_id, user_text)
             reply_to_line(reply_token, reply_message)
 
     return "ok"
 
-def generate_ai_reply(user_text):
+def handle_message(user_id, user_text):
+    # ユーザーの進行状況を確認
+    state = user_states.get(user_id, {"step": 0, "answers": []})
+
+    if state["step"] < len(questions):
+        # 回答を保存
+        if state["step"] > 0:  # 最初の入力はスキップして次の質問に進める
+            state["answers"].append(user_text)
+
+        # 次の質問を出す
+        question = questions[state["step"]]
+        state["step"] += 1
+        user_states[user_id] = state
+        return question
+    else:
+        # 全部答えたら診断を生成
+        state["answers"].append(user_text)
+        result = generate_ai_reply(state["answers"])
+        # 状態をリセット
+        user_states[user_id] = {"step": 0, "answers": []}
+        return result
+
+def generate_ai_reply(answers):
     prompt = f"""
     あなたは「やりたいこと診断AI」です。
-    ユーザーの入力から、その人が実現したいことをやさしく言語化してください。
+    以下の回答を参考に、ユーザーが実現したいことをまとめてください。
     また「タイプ診断」と「次の一歩」も添えてください。
 
-    ユーザーの入力: {user_text}
+    回答: {answers}
     """
     response = client.chat.completions.create(
         model="gpt-5-nano",
         messages=[
-            {"role": "system", "content": prompt}
+            {"role": "system", "content": "あなたは診断AIです。結果を短くキャッチーにまとめてください。"},
+            {"role": "user", "content": prompt}
         ]
     )
     return response.choices[0].message.content
