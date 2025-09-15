@@ -68,6 +68,34 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
+    # Part0: サブタイトル（タイプの一言まとめ）
+    prompt0 = f"""
+ユーザーの回答は以下です：
+{answers}
+
+この人を一言で表す短いフレーズを提案してください。
+前向きで親しみやすい表現にしてください。
+例：「挑戦を楽しむ人」「みんなを支える人」「自由を大事にする人」
+出力形式：
+✨ 一言まとめ: ...
+"""
+
+    try:
+        res0 = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。"},
+                {"role": "user", "content": prompt0}
+            ],
+            reasoning_effort="minimal",
+            verbosity="low",
+            max_completion_tokens=50
+        )
+        part0 = res0.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error part0:", e)
+        part0 = "✨ 一言まとめ: シンプルに自分らしい人"
+
     # Part1: 強みと課題
     prompt1 = f"""
 ユーザーの回答は以下です：
@@ -85,7 +113,7 @@ def generate_ai_reply(answers):
         res1 = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。日本語は自然で親しみやすくしてください。"},
+                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。"},
                 {"role": "user", "content": prompt1}
             ],
             reasoning_effort="minimal",
@@ -128,8 +156,13 @@ def generate_ai_reply(answers):
     # 固定コメント
     comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそう！"
 
-    return "🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）\n\n" + part1 + "\n" + part2 + "\n\n" + comment
-
+    return (
+        "🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）\n"
+        + part0 + "\n\n"
+        + part1 + "\n"
+        + part2 + "\n\n"
+        + comment
+    )
 
 def reply_to_line(reply_token, message):
     """LINEに返信"""
