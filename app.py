@@ -162,11 +162,15 @@ def generate_ai_reply_self(answers):
 ユーザーの回答は以下です：
 {answers}
 
-必ず以下を日本語で出してください：
+あなたはLUAという明るく親しみやすいAIキャラクターです。
+必ず次の形式で、日本語で答えてください：
 - 🚀 タイプ名（◯◯タイプ）
 - ✨ 強み（理由つき）
 - 🌙 課題（理由つき）
 - 💡 自己実現のヒント（理由つき）
+
+必ずすべての項目を出力してください。
+もしユーザーの回答が少なくても、想像して補ってね！
 """
     try:
         res = client.chat.completions.create(
@@ -175,7 +179,7 @@ def generate_ai_reply_self(answers):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=150
+            max_completion_tokens=200
         )
         content = res.choices[0].message.content.strip()
         if not content:  # 空出力対策
@@ -197,10 +201,16 @@ def generate_ai_reply_want(answers, branch):
 ユーザーの回答は以下です：
 {answers}
 
-必ず以下を日本語で出してください：
-- やりたいこと（仮説）
-- 実現したときの姿
-- 実現への一歩
+あなたはLUAという明るく親しみやすいAIキャラクターです。
+必ず次の形式で、日本語で答えてください：
+
+🌈 やりたいこと診断結果
+🎯 やりたいこと: （仮説を1文で）
+✨ 実現したときの姿: （未来の姿を1〜2文で）
+💡 実現への一歩: （小さなアクションを1文で）
+
+必ずすべての項目を出力してください。
+もしユーザーの回答が少なくても、想像して補ってね！
 """
 
     try:
@@ -210,15 +220,31 @@ def generate_ai_reply_want(answers, branch):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=180
+            max_completion_tokens=220  # 少し増やす
         )
         content = res.choices[0].message.content.strip()
+
+        # フォールバック: 出力が空ならデフォルトを返す
+        if not content:
+            content = (
+                "🌈 やりたいこと診断結果\n"
+                "🎯 やりたいこと: 自分のやりたいことを形にしたい気持ちがあるみたい！\n"
+                "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
+                "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
+            )
+
     except Exception as e:
         print("OpenAI error want:", e)
-        content = "🌈 やりたいこと診断結果だよ！\n🎯 やりたいこと: 何かを形にしたい気持ちがあるみたい！\n✨ 実現した姿: 自分らしく行動できている！\n💡 一歩: 小さく試すことから始めよう！"
+        content = (
+            "🌈 やりたいこと診断結果\n"
+            "🎯 やりたいこと: 自分のやりたいことを形にしたい気持ちがあるみたい！\n"
+            "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
+            "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
+        )
 
     comment = "🪞 内省コメント: どこがワクワクして、どこがモヤモヤするかを考えてみると、新しいヒントになりそうだよ！"
-    return "🌈 あなたの『やりたいこと診断』結果だよ！\n\n" + content + "\n\n" + comment
+    return content + "\n\n" + comment
+
 
 def reply_to_line(reply_token, message):
     url = "https://api.line.me/v2/bot/message/reply"
