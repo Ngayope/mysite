@@ -94,8 +94,10 @@ def generate_ai_reply(answers):
                 {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=250  # 少し短く
+            max_completion_tokens=200  # さらに短く
         )
+
+        print("OpenAI raw response:", response)  # ←レスポンス全体をログ出力
 
         result = response.choices[0].message.content
         if not result or result.strip() == "":
@@ -105,6 +107,7 @@ def generate_ai_reply(answers):
     except Exception as e:
         print("OpenAI error:", e)
         return "診断中にエラーが起きちゃいました💦 もう一度試してみてね！"
+
 
 
 
