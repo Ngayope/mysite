@@ -66,52 +66,67 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    prompt = f"""
+    # Part1: 強みと課題
+    prompt1 = f"""
 ユーザーの回答は以下です：
 {answers}
 
-この回答をもとに、自己理解の仮診断を作成してください。
+強みと課題をそれぞれ1文で説明してください。
+必ず回答を引用し、なぜそう思うのか理由も入れてください。
 
-出力フォーマット：
-🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）
-
-✨ 強み
-- 2文以内。ユーザーの回答を引用しながら、どんな強みがあるかを説明する。
-- 「なぜそう思ったのか」も必ず理由を入れる。
-
-🌙 課題
-- 2文以内。ユーザーの回答を引用しながら、改善するともっと良くなる点を説明する。
-- 「なぜそう思ったのか」も必ず理由を入れる。
-
-💡 ヒント
-- 2文以内。行動につながる具体的なアドバイスを書く。
-- 「なぜ有効なのか」を説明する。
-
----
-🪞 内省コメント
-どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそう！
+出力形式：
+✨ 強み: ...
+🌙 課題: ...
 """
 
     try:
-        response = client.chat.completions.create(
+        res1 = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己実現をサポートする優秀なコーチです。出力は親しみやすく、理由を必ず含めてください。"},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "あなたは自己理解診断を行うアシスタントです。"},
+                {"role": "user", "content": prompt1}
             ],
             reasoning_effort="minimal",
             verbosity="low",
-            max_completion_tokens=200
+            max_completion_tokens=80
         )
-
-        print("OpenAI raw response:", response)
-
-        content = response.choices[0].message.content if response.choices else ""
-        return (content or "診断結果を生成できませんでした。").strip()
-
+        part1 = res1.choices[0].message.content.strip()
     except Exception as e:
-        print("OpenAI error:", e)
-        return "診断中にエラーが起きました。もう一度試してみてください！"
+        print("OpenAI error part1:", e)
+        part1 = "強み・課題を生成できませんでした。"
+
+    # Part2: ヒント
+    prompt2 = f"""
+ユーザーの回答は以下です：
+{answers}
+
+自己実現につながるヒントを1文で出してください。
+必ず「なぜ有効か」を理由に含めてください。
+
+出力形式：
+💡 ヒント: ...
+"""
+
+    try:
+        res2 = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたは自己理解診断を行うアシスタントです。"},
+                {"role": "user", "content": prompt2}
+            ],
+            reasoning_effort="minimal",
+            verbosity="low",
+            max_completion_tokens=80
+        )
+        part2 = res2.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error part2:", e)
+        part2 = "ヒントを生成できませんでした。"
+
+    # 固定コメント
+    comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそう！"
+
+    return "🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）\n\n" + part1 + "\n" + part2 + "\n\n" + comment
 
 
 
