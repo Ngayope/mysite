@@ -158,18 +158,16 @@ def handle_message(user_id, user_text):
 
 
 def generate_ai_reply_self(answers):
-    # 自己理解診断
     prompt = f"""
 ユーザーの回答は以下です：
 {answers}
 
 必ず以下を日本語で出してください：
-- タイプ名（◯◯タイプ）
-- 強み（理由つき）
-- 課題（理由つき）
-- 自己実現のヒント（理由つき）
+- 🚀 タイプ名（◯◯タイプ）
+- ✨ 強み（理由つき）
+- 🌙 課題（理由つき）
+- 💡 自己実現のヒント（理由つき）
 """
-
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
@@ -177,13 +175,19 @@ def generate_ai_reply_self(answers):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=180
+            max_completion_tokens=150
         )
         content = res.choices[0].message.content.strip()
+        if not content:  # 空出力対策
+            raise ValueError("Empty response")
     except Exception as e:
         print("OpenAI error self:", e)
-        content = "🚀 あなたは「前向きタイプ」っぽいかも！（仮診断）\n✨ 強み: 新しいことを楽しめる！\n🌙 課題: 少し具体化が苦手かもね！\n💡 ヒント: 小さな一歩から始めると続けやすいよ！"
-
+        content = (
+            "🚀 あなたは「前向きタイプ」っぽいかも！（仮診断）\n"
+            "✨ 強み: 新しいことを楽しめる！\n"
+            "🌙 課題: 少し具体化が苦手かもね！\n"
+            "💡 ヒント: 小さな一歩から始めると続けやすいよ！"
+        )
     comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそうだよ！"
     return content + "\n\n" + comment
 
