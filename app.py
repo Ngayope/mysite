@@ -66,52 +66,53 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    prompt = (
-        "以下の回答を要約し、指定どおり4行だけ出力してください。\n"
-        f"回答: {answers}\n\n"
-        "出力形式（日本語・各1行・余分な文や装飾は出さない）:\n"
-        "1. 強み: ...\n"
-        "2. 課題: ...\n"
-        "3. ヒント: ...\n"
-        "4. 内省コメント: ..."
-    )
+    prompt = f"""
+ユーザーの回答は以下です：
+{answers}
+
+この回答をもとに、自己理解の仮診断を作成してください。
+
+出力フォーマット：
+🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）
+
+✨ 強み
+- 2文以内。ユーザーの回答を引用しながら、どんな強みがあるかを説明する。
+- 「なぜそう思ったのか」も必ず理由を入れる。
+
+🌙 課題
+- 2文以内。ユーザーの回答を引用しながら、改善するともっと良くなる点を説明する。
+- 「なぜそう思ったのか」も必ず理由を入れる。
+
+💡 ヒント
+- 2文以内。行動につながる具体的なアドバイスを書く。
+- 「なぜ有効なのか」を説明する。
+
+---
+🪞 内省コメント
+どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそう！
+"""
 
     try:
         response = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己実現の簡易診断を行うアシスタントです。出力は簡潔に。"},
-                {"role": "user", "content": prompt},
+                {"role": "system", "content": "あなたは自己実現をサポートする優秀なコーチです。出力は親しみやすく、理由を必ず含めてください。"},
+                {"role": "user", "content": prompt}
             ],
-            # 重要: 推論を最小化＆短く出させる
-            reasoning_effort="minimal",   # ← GPT-5系の新パラメータ
-            verbosity="low",              # ← 返答を短めに
-            max_completion_tokens=150,    # 120〜180の範囲で調整
-            stop=None                     # 必要なら ["\n5."] などで強制終了も可
+            reasoning_effort="minimal",
+            verbosity="low",
+            max_completion_tokens=200
         )
 
-        # ログで中身を観察
         print("OpenAI raw response:", response)
 
         content = response.choices[0].message.content if response.choices else ""
-        content = (content or "").strip()
-
-        if not content:
-            return "⚠️ 診断結果をうまく生成できませんでした。少し時間をあけて、もう一度お試しください。"
-
-        # 念のため4行に整形（行が多すぎる/少なすぎる時の補正）
-        lines = [ln.strip() for ln in content.splitlines() if ln.strip()]
-        want = ["1. 強み:", "2. 課題:", "3. ヒント:", "4. 内省コメント:"]
-        # 足りない行をダミーで補う
-        while len(lines) < 4:
-            lines.append(want[len(lines)] + " （生成できませんでした）")
-        # 余分な行は切る
-        lines = lines[:4]
-        return "\n".join(lines)
+        return (content or "診断結果を生成できませんでした。").strip()
 
     except Exception as e:
         print("OpenAI error:", e)
-        return "💦 診断中にエラーが起きました。もう一度試してみてください。"
+        return "診断中にエラーが起きました。もう一度試してみてください！"
+
 
 
 def reply_to_line(reply_token, message):
