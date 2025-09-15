@@ -138,4 +138,7 @@ def reply_to_line(reply_token, message):
         "replyToken": reply_token,
         "messages": [{"type": "text", "text": message}]
     }
-    requests.post(url, headers=headers, json=payload)
+
+    res = requests.post(url, headers=headers, json=payload)
+    print("LINE API response:", res.status_code, res.text)  # ← レスポンスログ追加
+
