@@ -118,10 +118,93 @@ def generate_ai_reply(answers, mode):
 
 
 def generate_self_reply(answers):
-    # 自己理解診断（タイプ＋強み・課題＋ヒント）
-    # ... ← ここはすでに実装済みのコードを利用（あなたのバージョンでOK）
-    return "（自己理解診断の結果をここで返す）"
+    # Part0: タイプ名
+    prompt0 = f"""
+ユーザーの回答は以下です：
+{answers}
 
+この人を一言で表す「タイプ名」を提案してください。
+・必ず「◯◯タイプ」という形式にしてください。
+・説明は2文。1文目でタイプ名、2文目で特徴をポジティブに説明してください。
+・LUAらしく「〜だと思うよ！」「〜かもね！」の口調で。
+
+出力形式：
+🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）
+✨ 特徴: ...
+"""
+    try:
+        res0 = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
+                {"role": "user", "content": prompt0}
+            ],
+            max_completion_tokens=120
+        )
+        part0 = res0.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error part0:", e)
+        part0 = "🚀 あなたは「ワクワク発見タイプ」っぽいかも！（仮診断）\n✨ 特徴: 新しいことを楽しんで挑戦する人だと思うよ！"
+
+    # Part1: 強みと課題
+    prompt1 = f"""
+ユーザーの回答は以下です：
+{answers}
+
+強みと課題をそれぞれ1〜2文で出してください。
+・必ず ✨強み と 🌙課題 の両方を書くこと
+・回答を引用しながら「なぜそう思うか」も入れること
+・LUAらしく親しみやすいトーンにすること
+
+出力形式：
+✨ 強み: ...
+🌙 課題: ...
+"""
+    try:
+        res1 = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたはLUAという元気でかわいらしいAIキャラクターです。"},
+                {"role": "user", "content": prompt1}
+            ],
+            max_completion_tokens=150
+        )
+        part1 = res1.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error part1:", e)
+        part1 = "✨ 強み: 前向きに考えられるところ！\n🌙 課題: 計画を細かく立てるのはちょっと苦手かもね！"
+
+    # Part2: ヒント
+    prompt2 = f"""
+ユーザーの回答は以下です：
+{answers}
+
+自己実現につながる具体的なヒントを1つください。
+・1〜2文
+・「なぜ有効か」を理由に含めること
+・最後に「応援してるよ！」など励ましを入れること
+
+出力形式：
+💡 ヒント: ...
+"""
+    try:
+        res2 = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたはLUAというフレンドリーで応援好きなAIキャラクターです。"},
+                {"role": "user", "content": prompt2}
+            ],
+            max_completion_tokens=120
+        )
+        part2 = res2.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error part2:", e)
+        part2 = "💡 ヒント: 小さな一歩から始めると、続けやすいと思うよ！応援してるね！"
+
+    # 固定コメント
+    comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそうだよ！"
+
+    return part0 + "\n\n" + part1 + "\n" + part2 + "\n\n" + comment
 
 def generate_want_reply(answers):
     # やりたいこと診断（テーマ＋ポイント＋一歩目）
