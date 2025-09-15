@@ -66,69 +66,40 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    answers_text = "\n".join([f"Q{i+1}: {a}" for i, a in enumerate(answers)])
-
     prompt = f"""
 ユーザーの回答は以下です：
-{answers_text}
+{answers}
 
-これを参考に、自己実現の仮診断を作成してください。
+この回答をもとに、自己実現の仮診断を作成してください。
 
 出力フォーマット：
 🔥 あなたは「◯◯タイプ」っぽいです！（仮診断）
 
 ◆ 強み
-- 回答を引用して、強みを具体的に示す
+- 回答を引用しつつ、強みを1〜2行
 
 ◆ 課題
-- 回答を引用して、課題や弱みを具体的に示す
+- 回答を引用しつつ、課題を1〜2行
 
-◆ 自己実現のヒント
+◆ ヒント
 - 行動につながるシンプルなアドバイスを1行
 
 💡 内省コメント
-- 「どこが当たっていて、どこが違うと感じるかを考えると新しい気づきが得られるかもしれません」など、
+- 「どこが当たっていて、どこが違うと感じたかを考えると、新しい気づきが得られるかもしれません」など、
   自然に振り返りを促す一文
-
----
-
-✨ 診断おつかれさまでした！ ✨
-ここまでで「自分の強み」や「課題のヒント」を少し感じられたと思います。
-
-ただし、今回の診断はあくまで“入口”の仮診断。
-本当にやりたいことを実現するには、
-小さな一歩を続ける「伴走」が必要です。
-
-🚀 『自己実現 伴走プラン』
-AIと仲間、そしてコーチが一緒に支える、世界にひとつの伴走サービスです。
-- 🤖 AIが毎週進捗を確認し、次の一歩を提案
-- 👥 仲間同士で成果や悩みをシェアして応援
-- 🎤 必要に応じてコーチと1on1で深掘り
-
-💡 今だけモニター限定価格：月額300円
-（通常価格：月額3,000円）
-
-👉 [伴走プランを詳しく見る]
 """
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-5-nano",
-            messages=[
-                {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
-                {"role": "user", "content": prompt}
-            ],
-            max_completion_tokens=800  # ← 上限を増加
-        )
+    response = client.chat.completions.create(
+        model="gpt-5-nano",
+        messages=[
+            {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
+            {"role": "user", "content": prompt}
+        ],
+        max_completion_tokens=300  # ← 短めに調整
+    )
 
-        print("OpenAI response:", response)
-        result = response.choices[0].message.content if response.choices[0].message else None
-        if not result or result.strip() == "":
-            return "⚠️ AIから診断を生成できませんでした。もう一度試してください。"
-        return result.strip()
-    except Exception as e:
-        print("OpenAI error:", e)
-        return "⚠️ AI応答に失敗しました。時間をおいて再度お試しください。"
+    return response.choices[0].message.content.strip()
+
 
 
 
