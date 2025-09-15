@@ -66,57 +66,52 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    # まず強みと課題
-    prompt1 = f"""
-ユーザーの回答は以下です：
-{answers}
-
-この回答をもとに、以下だけ出力してください：
-
-1. 強み（1行）
-2. 課題（1行）
-"""
+    prompt = (
+        "以下の回答を要約し、指定どおり4行だけ出力してください。\n"
+        f"回答: {answers}\n\n"
+        "出力形式（日本語・各1行・余分な文や装飾は出さない）:\n"
+        "1. 強み: ...\n"
+        "2. 課題: ...\n"
+        "3. ヒント: ...\n"
+        "4. 内省コメント: ..."
+    )
 
     try:
-        response1 = client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己実現をサポートする簡易診断AIです。"},
-                {"role": "user", "content": prompt1}
+                {"role": "system", "content": "あなたは自己実現の簡易診断を行うアシスタントです。出力は簡潔に。"},
+                {"role": "user", "content": prompt},
             ],
-            max_completion_tokens=80
+            # 重要: 推論を最小化＆短く出させる
+            reasoning_effort="minimal",   # ← GPT-5系の新パラメータ
+            verbosity="low",              # ← 返答を短めに
+            max_completion_tokens=150,    # 120〜180の範囲で調整
+            stop=None                     # 必要なら ["\n5."] などで強制終了も可
         )
-        part1 = response1.choices[0].message.content.strip()
+
+        # ログで中身を観察
+        print("OpenAI raw response:", response)
+
+        content = response.choices[0].message.content if response.choices else ""
+        content = (content or "").strip()
+
+        if not content:
+            return "⚠️ 診断結果をうまく生成できませんでした。少し時間をあけて、もう一度お試しください。"
+
+        # 念のため4行に整形（行が多すぎる/少なすぎる時の補正）
+        lines = [ln.strip() for ln in content.splitlines() if ln.strip()]
+        want = ["1. 強み:", "2. 課題:", "3. ヒント:", "4. 内省コメント:"]
+        # 足りない行をダミーで補う
+        while len(lines) < 4:
+            lines.append(want[len(lines)] + " （生成できませんでした）")
+        # 余分な行は切る
+        lines = lines[:4]
+        return "\n".join(lines)
+
     except Exception as e:
-        print("OpenAI error part1:", e)
-        part1 = "強み・課題の診断を生成できませんでした。"
-
-    # 次にヒントと内省コメント
-    prompt2 = f"""
-ユーザーの回答は以下です：
-{answers}
-
-この回答をもとに、以下だけ出力してください：
-
-3. ヒント（1行）
-4. 内省コメント（1行）
-"""
-    try:
-        response2 = client.chat.completions.create(
-            model="gpt-5-nano",
-            messages=[
-                {"role": "system", "content": "あなたは自己実現をサポートする簡易診断AIです。"},
-                {"role": "user", "content": prompt2}
-            ],
-            max_completion_tokens=80
-        )
-        part2 = response2.choices[0].message.content.strip()
-    except Exception as e:
-        print("OpenAI error part2:", e)
-        part2 = "ヒント・コメントを生成できませんでした。"
-
-    return part1 + "\n" + part2
-
+        print("OpenAI error:", e)
+        return "💦 診断中にエラーが起きました。もう一度試してみてください。"
 
 
 def reply_to_line(reply_token, message):
