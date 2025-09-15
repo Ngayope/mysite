@@ -72,33 +72,39 @@ def generate_ai_reply(answers):
 
 この回答をもとに、自己実現の仮診断を作成してください。
 
-出力フォーマット：
 🔥 あなたは「◯◯タイプ」っぽいです！（仮診断）
 
 ◆ 強み
-- 回答を引用しつつ、強みを1〜2行
+- 回答を引用しつつ1行で
 
 ◆ 課題
-- 回答を引用しつつ、課題を1〜2行
+- 回答を引用しつつ1行で
 
 ◆ ヒント
-- 行動につながるシンプルなアドバイスを1行
+- 行動につながるアドバイスを1行で
 
 💡 内省コメント
-- 「どこが当たっていて、どこが違うと感じたかを考えると、新しい気づきが得られるかもしれません」など、
-  自然に振り返りを促す一文
+- 「どこが当たっていて、どこが違うと感じたかを考えると、新しい気づきがあるかもしれません」
 """
 
-    response = client.chat.completions.create(
-        model="gpt-5-nano",
-        messages=[
-            {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
-            {"role": "user", "content": prompt}
-        ],
-        max_completion_tokens=300  # ← 短めに調整
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=250  # 少し短く
+        )
 
-    return response.choices[0].message.content.strip()
+        result = response.choices[0].message.content
+        if not result or result.strip() == "":
+            return "診断結果を生成できませんでした🙇‍♀️ もう一度試してみてください！"
+        return result.strip()
+
+    except Exception as e:
+        print("OpenAI error:", e)
+        return "診断中にエラーが起きちゃいました💦 もう一度試してみてね！"
 
 
 
