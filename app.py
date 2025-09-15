@@ -66,7 +66,6 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    # 回答を整形して自然に渡す
     answers_text = "\n".join([f"Q{i+1}: {a}" for i, a in enumerate(answers)])
 
     prompt = f"""
@@ -79,10 +78,10 @@ def generate_ai_reply(answers):
 🔥 あなたは「◯◯タイプ」っぽいです！（仮診断）
 
 ◆ 強み
-- 回答を引用して、強みを具体的に2行以内で示す
+- 回答を引用して、強みを具体的に示す
 
 ◆ 課題
-- 回答を引用して、課題や弱みを2行以内で示す
+- 回答を引用して、課題や弱みを具体的に示す
 
 ◆ 自己実現のヒント
 - 行動につながるシンプルなアドバイスを1行
@@ -119,17 +118,18 @@ AIと仲間、そしてコーチが一緒に支える、世界にひとつの伴
                 {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=500
+            max_completion_tokens=800  # ← 上限を増加
         )
 
-        print("OpenAI response:", response)  # デバッグログ
+        print("OpenAI response:", response)
         result = response.choices[0].message.content if response.choices[0].message else None
-        if not result:
+        if not result or result.strip() == "":
             return "⚠️ AIから診断を生成できませんでした。もう一度試してください。"
         return result.strip()
     except Exception as e:
         print("OpenAI error:", e)
         return "⚠️ AI応答に失敗しました。時間をおいて再度お試しください。"
+
 
 
 def reply_to_line(reply_token, message):
