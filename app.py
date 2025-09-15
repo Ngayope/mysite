@@ -61,6 +61,18 @@ def webhook():
 
     return "ok"
 
+# 最初の挨拶メッセージ
+intro_message = (
+    "やっほー！LUAだよ🌙✨\n\n"
+    "わたしは『Link Up with AI』の診断アシスタント。"
+    "いまは成長中で、出力がちょっと不安定なときもあるけどごめんね🙏\n"
+    "これからいっぱい勉強して、もっと頼れる相棒になっていくから楽しみにしててね！\n\n"
+    "診断は2種類あるよ！\n"
+    "1️⃣ 自己理解診断（自分の強みや課題を知りたい人向け）\n"
+    "2️⃣ やりたいこと診断（夢や目標を見つけたい人向け）\n\n"
+    "やりたい診断を 1️⃣ か 2️⃣ で選んで送ってね！（例：1 or 2）"
+)
+
 def handle_message(user_id, user_text):
     state = user_states.get(user_id, {"step": -1, "answers": [], "used": False, "type": None, "branch": None})
 
@@ -68,20 +80,20 @@ def handle_message(user_id, user_text):
     if state.get("used", False):
         return "診断は1回のみ無料だよ✨ 続きをご希望の場合は、詳細診断やコーチングをご利用ください！"
 
-    # 診断タイプ選択（step = -1）
+    # 最初の案内
     if state["step"] == -1:
         if user_text in ["1", "１"]:
             state["type"] = "self"
             state["step"] = 0
             user_states[user_id] = state
-            return "🌟 LUAだよ！\n自己理解診断を始めるね！まずは質問に答えてみてね〜。\n\n" + questions_self[0]
+            return "自己理解診断を始めるね！\n\n" + questions_self[0]
         elif user_text in ["2", "２"]:
             state["type"] = "want"
             state["step"] = 0
             user_states[user_id] = state
-            return "🌈 LUAだよ！\nやりたいこと診断を始めるね！まずは聞いてみるよ。\n\nいま本当にやってみたい！と思うことはある？"
+            return "やりたいこと診断を始めるね！\n\nいま本当にやってみたい！と思うことはある？"
         else:
-            return "はじめまして、LUAだよ！✨\n診断を選んでね！\n1️⃣ 自己理解診断\n2️⃣ やりたいこと診断"
+            return intro_message
 
     # 自己理解診断
     if state["type"] == "self":
@@ -89,8 +101,8 @@ def handle_message(user_id, user_text):
             state["answers"].append(user_text)
 
         if state["step"] < len(questions_self) - 1:
-            question = questions_self[state["step"] + 1]
             state["step"] += 1
+            question = questions_self[state["step"]]
             user_states[user_id] = state
             return question
         else:
@@ -102,18 +114,17 @@ def handle_message(user_id, user_text):
 
     # やりたいこと診断
     if state["type"] == "want":
-        # Q1で分岐
-        if state["step"] == 0:
+        # Q1分岐
+        if state["step"] == 0 and state["branch"] is None:
+            state["answers"].append(user_text)
             if any(x in user_text for x in ["ある", "したい", "やりたい"]):
                 state["branch"] = "deep"
                 state["step"] = 0
-                state["answers"].append(user_text)
                 user_states[user_id] = state
                 return questions_want_deep[0]
             else:
                 state["branch"] = "explore"
                 state["step"] = 0
-                state["answers"].append(user_text)
                 user_states[user_id] = state
                 return questions_want_explore[0]
 
@@ -144,6 +155,7 @@ def handle_message(user_id, user_text):
                 state["used"] = True
                 user_states[user_id] = state
                 return result
+
 
 def generate_ai_reply_self(answers):
     # 自己理解診断
