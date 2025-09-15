@@ -68,41 +68,47 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
-    # Part0: サブタイトル（タイプの一言まとめ）
+    # Part0: タイプ名（LUA風）
     prompt0 = f"""
 ユーザーの回答は以下です：
 {answers}
 
-この人を一言で表す短いフレーズを提案してください。
-前向きで親しみやすい表現にしてください。
-例：「挑戦を楽しむ人」「みんなを支える人」「自由を大事にする人」
+この人を一言で表す「タイプ名」を提案してください。
+・必ず「◯◯タイプ」という形式にしてください。
+・LUAがしゃべるように、明るく親しみやすいトーンにしてください。
+・2文に分けて、1文目でタイプ名、2文目でその特徴をやさしく説明してください。
+・説明はポジティブで、「〜だと思うよ！」「〜かもしれないね！」のような口調にしてください。
+
 出力形式：
-✨ 一言まとめ: ...
+🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）
+✨ 特徴: ...
 """
 
     try:
         res0 = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。"},
+                {"role": "system", "content": "あなたはLUAというフレンドリーで元気なAIキャラクターです。"},
                 {"role": "user", "content": prompt0}
             ],
             reasoning_effort="minimal",
             verbosity="low",
-            max_completion_tokens=50
+            max_completion_tokens=120
         )
         part0 = res0.choices[0].message.content.strip()
     except Exception as e:
         print("OpenAI error part0:", e)
-        part0 = "✨ 一言まとめ: シンプルに自分らしい人"
+        part0 = "🚀 あなたは「元気いっぱいタイプ」っぽいかも！（仮診断）\n✨ 特徴: やりたいことにワクワクして進める人だと思うよ！"
 
     # Part1: 強みと課題
     prompt1 = f"""
 ユーザーの回答は以下です：
 {answers}
 
-強みと課題をそれぞれ1〜2文で説明してください。
-必ず回答を引用し、なぜそう思うのかを理由も添えてください。
+強みと課題を必ず両方出してください。
+・それぞれ1〜2文で説明すること。
+・必ず回答を引用し、なぜそう思うのか理由を含めること。
+・LUAらしくフレンドリーに、「〜かもね！」「〜って素敵！」などの口調を使ってください。
 
 出力形式：
 ✨ 強み: ...
@@ -113,25 +119,27 @@ def generate_ai_reply(answers):
         res1 = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。"},
+                {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt1}
             ],
             reasoning_effort="minimal",
             verbosity="low",
-            max_completion_tokens=100
+            max_completion_tokens=150
         )
         part1 = res1.choices[0].message.content.strip()
     except Exception as e:
         print("OpenAI error part1:", e)
-        part1 = "強み・課題を生成できませんでした。"
+        part1 = "✨ 強み: 前向きに取り組めるところだと思うよ！\n🌙 課題: ちょっと欲張りすぎちゃうかもしれないね！"
 
     # Part2: ヒント
     prompt2 = f"""
 ユーザーの回答は以下です：
 {answers}
 
-自己実現につながる具体的なヒントを1〜2文で出してください。
-必ず「なぜ有効か」を理由に含めてください。
+自己実現につながる具体的なヒントを必ず1つ出してください。
+・1〜2文で書くこと。
+・「なぜ有効か」を必ず含めること。
+・最後に「応援してるよ！」など、LUAらしい励ましを入れてください。
 
 出力形式：
 💡 ヒント: ...
@@ -141,28 +149,23 @@ def generate_ai_reply(answers):
         res2 = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたは自己理解をサポートする優しいコーチです。"},
+                {"role": "system", "content": "あなたはLUAという明るくかわいらしいAIキャラクターです。"},
                 {"role": "user", "content": prompt2}
             ],
             reasoning_effort="minimal",
             verbosity="low",
-            max_completion_tokens=100
+            max_completion_tokens=120
         )
         part2 = res2.choices[0].message.content.strip()
     except Exception as e:
         print("OpenAI error part2:", e)
-        part2 = "ヒントを生成できませんでした。"
+        part2 = "💡 ヒント: 小さな一歩から始めると、続けやすいと思うよ！応援してるね！"
 
-    # 固定コメント
-    comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそう！"
+    # 固定コメント（LUA風）
+    comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそうだよ！"
 
-    return (
-        "🚀 あなたは「◯◯タイプ」っぽいかも！（仮診断）\n"
-        + part0 + "\n\n"
-        + part1 + "\n"
-        + part2 + "\n\n"
-        + comment
-    )
+    return part0 + "\n\n" + part1 + "\n" + part2 + "\n\n" + comment
+
 
 def reply_to_line(reply_token, message):
     """LINEに返信"""
