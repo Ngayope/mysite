@@ -66,9 +66,12 @@ def handle_message(user_id, user_text):
         return result
 
 def generate_ai_reply(answers):
+    # 回答を整形して自然に渡す
+    answers_text = "\n".join([f"Q{i+1}: {a}" for i, a in enumerate(answers)])
+
     prompt = f"""
 ユーザーの回答は以下です：
-{answers}
+{answers_text}
 
 これを参考に、自己実現の仮診断を作成してください。
 
@@ -107,24 +110,26 @@ AIと仲間、そしてコーチが一緒に支える、世界にひとつの伴
 （通常価格：月額3,000円）
 
 👉 [伴走プランを詳しく見る]
-
-注意：
-- 診断は断定せず「仮診断」として表現すること
-- 必ずユーザーの回答を引用すること
-- 日本語で親しみやすいトーンにすること
 """
 
-    response = client.chat.completions.create(
-        model="gpt-5-nano",
-        messages=[
-            {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
-            {"role": "user", "content": prompt}
-        ],
-        max_completion_tokens=500  # temperature削除
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[
+                {"role": "system", "content": "あなたは自己実現支援を行う優秀なコーチです。"},
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=500
+        )
 
-    return response.choices[0].message.content.strip()
-
+        print("OpenAI response:", response)  # デバッグログ
+        result = response.choices[0].message.content if response.choices[0].message else None
+        if not result:
+            return "⚠️ AIから診断を生成できませんでした。もう一度試してください。"
+        return result.strip()
+    except Exception as e:
+        print("OpenAI error:", e)
+        return "⚠️ AI応答に失敗しました。時間をおいて再度お試しください。"
 
 
 def reply_to_line(reply_token, message):
