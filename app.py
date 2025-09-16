@@ -164,10 +164,10 @@ def generate_ai_reply_self(answers):
 
 あなたはLUAという明るく親しみやすいAIキャラクターです。
 必ず次の形式で、日本語で答えてください：
-- 🚀 タイプ名（◯◯タイプ）
-- ✨ 強み（理由つき）
-- 🌙 課題（理由つき）
-- 💡 自己実現のヒント（理由つき）
+🚀 タイプ名（◯◯タイプ）
+✨ 強み（理由つき）
+🌙 課題（理由つき）
+💡 自己実現のヒント（理由つき）
 
 必ずすべての項目を出力してください。
 もしユーザーの回答が少なくても、想像して補ってね！
@@ -179,10 +179,10 @@ def generate_ai_reply_self(answers):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=200
+            max_completion_tokens=250
         )
         content = res.choices[0].message.content.strip()
-        if not content:  # 空出力対策
+        if not content:
             raise ValueError("Empty response")
     except Exception as e:
         print("OpenAI error self:", e)
@@ -205,12 +205,12 @@ def generate_ai_reply_want(answers, branch):
 
 🌈 やりたいこと診断結果
 🎯 やりたいこと: （仮説を1文で）
-✨ 実現したときの姿: （未来の姿を1〜2文で）
+✨ 実現したときの姿: （未来の姿を1文で）
 💡 実現への一歩: （小さなアクションを1文で）
 
 必ずすべての項目を出力してください。
+もしユーザーの回答が少なくても、想像して補ってね！
 """
-
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
@@ -218,23 +218,11 @@ def generate_ai_reply_want(answers, branch):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=400
+            max_completion_tokens=250
         )
-        print("OpenAI raw response (want):", res)  # デバッグ用
-
-        content = res.choices[0].message.content
-        print("Extracted content:", content)  # デバッグ用
-
-        if not content or not content.strip():
-            content = (
-                "🌈 やりたいこと診断結果\n"
-                "🎯 やりたいこと: 自分のやりたいことを形にしたい気持ちがあるみたい！\n"
-                "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
-                "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
-            )
-        else:
-            content = content.strip()
-
+        content = res.choices[0].message.content.strip()
+        if not content:
+            raise ValueError("Empty response")
     except Exception as e:
         print("OpenAI error want:", e)
         content = (
@@ -243,11 +231,8 @@ def generate_ai_reply_want(answers, branch):
             "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
             "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
         )
-
     comment = "🪞 内省コメント: どこがワクワクして、どこがモヤモヤするかを考えてみると、新しいヒントになりそうだよ！"
     return content + "\n\n" + comment
-
-
 
 def reply_to_line(reply_token, message):
     url = "https://api.line.me/v2/bot/message/reply"
