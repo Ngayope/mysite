@@ -218,7 +218,7 @@ def generate_ai_reply_want(answers, branch):
                 {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=220
+            max_completion_tokens=400
         )
         print("OpenAI raw response (want):", res)  # デバッグ用
 
