@@ -162,28 +162,43 @@ def generate_ai_reply_self(answers):
 ユーザーの回答は以下です：
 {answers}
 
-あなたはLUAという明るく親しみやすいAIキャラクターです。
-必ず次の形式で、日本語で答えてください：
-🚀 タイプ名（◯◯タイプ）
-✨ 強み（理由つき）
-🌙 課題（理由つき）
-💡 自己実現のヒント（理由つき）
-
-必ずすべての項目を出力してください。
-もしユーザーの回答が少なくても、想像して補ってね！
+この人の「自己理解診断」の結果をまとめてね。
+・タイプ名（◯◯タイプ）
+・強み（理由つき）
+・課題（理由つき）
+・自己実現のヒント（理由つき）
+をLUAらしく、親しみやすい日本語で答えてください。
 """
+
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
+                {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=250
+            max_completion_tokens=500,
+            temperature=0.8
         )
-        content = res.choices[0].message.content.strip()
-        if not content:
+        raw = res.choices[0].message.content.strip()
+        if not raw:
             raise ValueError("Empty response")
+
+        # 抽出処理
+        lines = raw.split("\n")
+        t, s, k, h = "不明", "不明", "不明", "不明"
+        for line in lines:
+            if "タイプ" in line:
+                t = line.strip()
+            elif "強み" in line:
+                s = line.strip()
+            elif "課題" in line:
+                k = line.strip()
+            elif "ヒント" in line:
+                h = line.strip()
+
+        content = f"{t}\n{s}\n{k}\n{h}"
+
     except Exception as e:
         print("OpenAI error self:", e)
         content = (
@@ -192,37 +207,55 @@ def generate_ai_reply_self(answers):
             "🌙 課題: 少し具体化が苦手かもね！\n"
             "💡 ヒント: 小さな一歩から始めると続けやすいよ！"
         )
+
     comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそうだよ！"
     return content + "\n\n" + comment
 
-def generate_ai_reply_want(answers, branch):
+# ===== やりたいこと診断の結果生成 =====
+def generate_ai_reply_want(answers):
     prompt = f"""
 ユーザーの回答は以下です：
 {answers}
 
-あなたはLUAという明るく親しみやすいAIキャラクターです。
-必ず次の形式で、日本語で答えてください：
-
-🌈 やりたいこと診断結果
-🎯 やりたいこと: （仮説を1文で）
-✨ 実現したときの姿: （未来の姿を1文で）
-💡 実現への一歩: （小さなアクションを1文で）
-
-必ずすべての項目を出力してください。
-もしユーザーの回答が少なくても、想像して補ってね！
+この人の「やりたいこと診断」の結果をまとめてね。
+・やりたいこと（仮説）
+・そのやりたいことを実現した未来の姿
+・今すぐできる小さな一歩
+をLUAらしく、親しみやすい日本語で答えてください。
 """
+
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
-                {"role": "system", "content": "あなたはLUAという親しみやすいAIキャラクターです。"},
+                {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=250
+            max_completion_tokens=500,
+            temperature=0.8
         )
-        content = res.choices[0].message.content.strip()
-        if not content:
+        raw = res.choices[0].message.content.strip()
+        if not raw:
             raise ValueError("Empty response")
+
+        # 抽出処理
+        lines = raw.split("\n")
+        want, vision, step = "不明", "不明", "不明"
+        for line in lines:
+            if "やりたい" in line or "したい" in line:
+                want = line.strip()
+            elif "姿" in line or "未来" in line:
+                vision = line.strip()
+            elif "一歩" in line or "まず" in line or "小さく" in line:
+                step = line.strip()
+
+        content = (
+            "🌈 やりたいこと診断結果\n"
+            f"🎯 やりたいこと: {want}\n"
+            f"✨ 実現したときの姿: {vision}\n"
+            f"💡 実現への一歩: {step}"
+        )
+
     except Exception as e:
         print("OpenAI error want:", e)
         content = (
@@ -231,9 +264,10 @@ def generate_ai_reply_want(answers, branch):
             "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
             "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
         )
+
     comment = "🪞 内省コメント: どこがワクワクして、どこがモヤモヤするかを考えてみると、新しいヒントになりそうだよ！"
     return content + "\n\n" + comment
-
+    
 def reply_to_line(reply_token, message):
     url = "https://api.line.me/v2/bot/message/reply"
     headers = {
