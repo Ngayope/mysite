@@ -203,18 +203,18 @@ def generate_ai_reply_want(answers):
 
 def generate_summary_image(title, answers, result_text):
     try:
-        # ユーザーの回答からイメージを作成
+        # 回答をそのまま反映して未来像を描かせる
         prompt = (
             f"カードデザイン風で、ポップで温かい雰囲気。"
-            f"character.png のキャラクター（性別不詳の回答者）が『{title}』の診断に取り組んでいる様子。"
-            f"隣に LUA.png の女の子キャラ（LUA）が励ましている。"
-            f"ユーザーの回答内容に基づいて、未来像やシーンをわくわく感のある形で描いてください。"
-            f"背景や状況は以下を参考に: {answers} / {result_text}。"
+            f"static/character.png のキャラクター（性別不詳の回答者）が『{title}』に取り組んでいる様子。"
+            f"隣に static/LUA.png の女の子キャラ（LUA）が励ましている。"
+            f"ユーザーの回答内容をもとに、未来像やシーンをわくわく感のある形で描いてください。"
+            f"参考になる回答内容: {answers} / {result_text}。"
             f"キャラの表情やポーズも内容に合わせて変化させる。"
             f"テキストは含めず。"
         )
 
-        with open("static/character.png", "rb") as char_img, open("static/lua.png", "rb") as lua_img:
+        with open("static/character.png", "rb") as char_img, open("static/LUA.png", "rb") as lua_img:
             res = client.images.edit(
                 model="gpt-image-1",
                 prompt=prompt,
