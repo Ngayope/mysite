@@ -235,8 +235,10 @@ def generate_ai_reply_want(answers):
             temperature=0.8
         )
         raw = res.choices[0].message.content.strip()
+        print("Raw AI output (want):", repr(raw))  # デバッグ
+
         if not raw:
-            raise ValueError("Empty response")
+            raise ValueError("Empty response from OpenAI")
 
         # 抽出処理
         lines = raw.split("\n")
@@ -248,6 +250,10 @@ def generate_ai_reply_want(answers):
                 vision = line.strip()
             elif "一歩" in line or "まず" in line or "小さく" in line:
                 step = line.strip()
+
+        # Fallback（全部不明なら固定メッセージ）
+        if all(x == "不明" for x in [want, vision, step]):
+            raise ValueError("Parsed values are all '不明'")
 
         content = (
             "🌈 やりたいこと診断結果\n"
@@ -267,6 +273,7 @@ def generate_ai_reply_want(answers):
 
     comment = "🪞 内省コメント: どこがワクワクして、どこがモヤモヤするかを考えてみると、新しいヒントになりそうだよ！"
     return content + "\n\n" + comment
+
     
 def reply_to_line(reply_token, message):
     url = "https://api.line.me/v2/bot/message/reply"
