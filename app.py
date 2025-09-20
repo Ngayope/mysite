@@ -220,47 +220,29 @@ def _answers_to_scene_hint(title: str, answers: list[str], result_text: str, max
     )
 
 def generate_summary_image(title, answers, result_text):
-    """
-    1) static/base_scene.png（LUA＋LUABITの合成ベース）を読み込み
-    2) 回答に合わせたシーン説明を付与して images.edit で加工
-    3) 生成URLをそのまま返す（LINEへ直接送信）
-    """
     try:
-        scene_hint = _answers_to_scene_hint(title, answers, result_text)
-
-        # 絵柄の固定（ブランド一貫性）
-        style_directive = (
-            "Kawaii, bright, share-worthy card look. Keep LUABIT in the center as main hero, "
-            "cute proportions (Hello-Kitty-like balance, soft round forms), gentle smile, "
-            "mint/blue accents and chest emblem. Keep LUA small on the side, supportive pose, "
-            "same character model as base. Clean background with subtle pops; no text; high quality."
+        # 回答を短くまとめてプロンプトに入れる
+        scene_hint = answers[-1] if answers else "ユーザーの未来のシーン"
+        prompt = (
+            f"Edit the base image so that LUABIT (white kawaii mascot rabbit) "
+            f"is actively doing: {scene_hint}. "
+            "LUA (teal-haired girl) is smaller on the side, cheering warmly. "
+            "Keep kawaii, bright, card-style design. High quality, no text."
         )
 
-        prompt = textwrap.dedent(f"""
-            Edit the provided base image to visualize the user's future scene.
-            {style_directive}
-            {scene_hint}
-            Preserve character identities and colors. Keep composition readable for social sharing.
-        """).strip()
-
-        # 合成済みのベース画像（LUA＋LUABIT）を編集
-        with open("static/base_scene.png", "rb") as base_img:
+        with open("static/base_scene.webp", "rb") as base_img:  # 軽量化
             res = client.images.edit(
                 model="gpt-image-1",
                 prompt=prompt,
-                image=base_img,            # ← 単数形
-                size="1024x1024"
+                image=base_img,
+                size="512x512"   # ←まずは小さめで安定化
             )
-
-        url = res.data[0].url.strip()
-        if not url:
-            raise ValueError("Empty image URL")
-        return url
+        return res.data[0].url.strip()
 
     except Exception as e:
         print("Image generation error:", e)
-        # フォールバック（サービス継続性を優先）
-        return "https://placekitten.com/1024/1024"
+        return "/static/base_scene.png"  # フォールバック
+
 
 def reply_to_line(reply_token, messages):
     url = "https://api.line.me/v2/bot/message/reply"
