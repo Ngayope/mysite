@@ -95,7 +95,7 @@ def handle_message(user_id, user_text):
             state["type"] = "want"
             state["step"] = 0
             user_states[user_id] = state
-            return [{"type": "text", "text": "やりたいこと診断を始めるね！\n\nやりたいことはある？"}]
+            return [{"type": "text", "text": "やりたいこと診断を始めるね！\n\nこれが叶ったらうれしいな～って思うことはある？✨"}]
         else:
             return [{"type": "text", "text": intro_message}]
 
@@ -214,7 +214,7 @@ def generate_summary_image(title, answers, result_text):
             f"テキストは含めず。"
         )
 
-        with open("static/character.png", "rb") as char_img, open("static/LUA.png", "rb") as lua_img:
+        with open("static/character.png", "rb") as char_img, open("static/lua.png", "rb") as lua_img:
             res = client.images.edit(
                 model="gpt-image-1",
                 prompt=prompt,
