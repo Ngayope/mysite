@@ -127,33 +127,34 @@ def handle_message(user_id, user_text):
                 state["step"] = 0
                 user_states[user_id] = state
                 return questions_want_explore[0]
+                
                 # 深掘りルート
-if state["branch"] == "deep":
-    if state["step"] < len(questions_want_deep) - 1:
-        state["answers"].append(user_text)
-        state["step"] += 1
-        user_states[user_id] = state
-        return questions_want_deep[state["step"]]
-    else:
-        state["answers"].append(user_text)
-        result = generate_ai_reply_want(state["answers"])  # ✅ 修正
-        state["used"] = True
-        user_states[user_id] = state
-        return result
-
-# 探索ルート
-if state["branch"] == "explore":
-    if state["step"] < len(questions_want_explore) - 1:
-        state["answers"].append(user_text)
-        state["step"] += 1
-        user_states[user_id] = state
-        return questions_want_explore[state["step"]]
-    else:
-        state["answers"].append(user_text)
-        result = generate_ai_reply_want(state["answers"])  # ✅ 修正
-        state["used"] = True
-        user_states[user_id] = state
-        return result
+                if state["branch"] == "deep":
+                    if state["step"] < len(questions_want_deep) - 1:
+                        state["answers"].append(user_text)
+                        state["step"] += 1
+                        user_states[user_id] = state
+                        return questions_want_deep[state["step"]]
+                    else:
+                        state["answers"].append(user_text)
+                        result = generate_ai_reply_want(state["answers"])  # ✅ 修正
+                        state["used"] = True
+                        user_states[user_id] = state
+                        return result
+                
+                # 探索ルート
+                if state["branch"] == "explore":
+                    if state["step"] < len(questions_want_explore) - 1:
+                        state["answers"].append(user_text)
+                        state["step"] += 1
+                        user_states[user_id] = state
+                        return questions_want_explore[state["step"]]
+                    else:
+                        state["answers"].append(user_text)
+                        result = generate_ai_reply_want(state["answers"])  # ✅ 修正
+                        state["used"] = True
+                        user_states[user_id] = state
+                        return result
 
 
 def generate_ai_reply_self(answers):
