@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import os
 import requests
 from openai import OpenAI
+import random
 
 app = Flask(__name__)
 
@@ -38,6 +39,9 @@ questions_want_explore = [
     "1年後の自分がちょっと笑顔になっているとしたら、どんな姿？"
 ]
 
+# 相槌のバリエーション
+aizuchi_list = ["うんうん！", "なるほど〜", "いいね！", "へぇ、面白い！", "確かに！", "すごいね！"]
+
 @app.route("/", methods=["GET"])
 def home():
     return "LINE Bot is running!"
@@ -56,8 +60,8 @@ def webhook():
             user_text = event["message"]["text"].strip()
             reply_token = event["replyToken"]
 
-            reply_message = handle_message(user_id, user_text)
-            reply_to_line(reply_token, reply_message)
+            reply_messages = handle_message(user_id, user_text)
+            reply_to_line(reply_token, reply_messages)
 
     return "ok"
 
@@ -78,7 +82,7 @@ def handle_message(user_id, user_text):
 
     # すでに診断済み
     if state.get("used", False):
-        return "診断は1回のみ無料だよ✨ 続きをご希望の場合は、詳細診断やコーチングをご利用ください！"
+        return [{"type": "text", "text": "診断は1回のみ無料だよ✨ 続きをご希望の場合は、詳細診断やコーチングをご利用ください！"}]
 
     # 最初の案内
     if state["step"] == -1:
@@ -86,14 +90,14 @@ def handle_message(user_id, user_text):
             state["type"] = "self"
             state["step"] = 0
             user_states[user_id] = state
-            return "自己理解診断を始めるね！\n\n" + questions_self[0]
+            return [{"type": "text", "text": "自己理解診断を始めるね！\n\n" + questions_self[0]}]
         elif user_text in ["2", "２"]:
             state["type"] = "want"
             state["step"] = 0
             user_states[user_id] = state
-            return "やりたいこと診断を始めるね！\n\nいま本当にやってみたい！と思うことはある？"
+            return [{"type": "text", "text": "やりたいこと診断を始めるね！\n\nやりたいことはある？"}]
         else:
-            return intro_message
+            return [{"type": "text", "text": intro_message}]
 
     # 自己理解診断
     if state["type"] == "self":
@@ -104,13 +108,14 @@ def handle_message(user_id, user_text):
             state["step"] += 1
             question = questions_self[state["step"]]
             user_states[user_id] = state
-            return question
+            return [{"type": "text", "text": random.choice(aizuchi_list) + "\n" + question}]
         else:
             state["answers"].append(user_text)
             result = generate_ai_reply_self(state["answers"])
+            img_url = generate_summary_image("自己理解診断", state["answers"], result)
             state["used"] = True
             user_states[user_id] = state
-            return result
+            return [{"type": "text", "text": result}, {"type": "image", "originalContentUrl": img_url, "previewImageUrl": img_url}]
 
     # やりたいこと診断
     if state["type"] == "want":
@@ -121,12 +126,12 @@ def handle_message(user_id, user_text):
                 state["branch"] = "deep"
                 state["step"] = 0
                 user_states[user_id] = state
-                return questions_want_deep[0]
+                return [{"type": "text", "text": questions_want_deep[0]}]
             else:
                 state["branch"] = "explore"
                 state["step"] = 0
                 user_states[user_id] = state
-                return questions_want_explore[0]
+                return [{"type": "text", "text": questions_want_explore[0]}]
 
         # 深掘りルート
         if state["branch"] == "deep":
@@ -134,13 +139,14 @@ def handle_message(user_id, user_text):
                 state["answers"].append(user_text)
                 state["step"] += 1
                 user_states[user_id] = state
-                return questions_want_deep[state["step"]]
+                return [{"type": "text", "text": random.choice(aizuchi_list) + "\n" + questions_want_deep[state["step"]]}]
             else:
                 state["answers"].append(user_text)
                 result = generate_ai_reply_want(state["answers"])
+                img_url = generate_summary_image("やりたいこと診断", state["answers"], result)
                 state["used"] = True
                 user_states[user_id] = state
-                return result
+                return [{"type": "text", "text": result}, {"type": "image", "originalContentUrl": img_url, "previewImageUrl": img_url}]
 
         # 探索ルート
         if state["branch"] == "explore":
@@ -148,134 +154,81 @@ def handle_message(user_id, user_text):
                 state["answers"].append(user_text)
                 state["step"] += 1
                 user_states[user_id] = state
-                return questions_want_explore[state["step"]]
+                return [{"type": "text", "text": random.choice(aizuchi_list) + "\n" + questions_want_explore[state["step"]]}]
             else:
                 state["answers"].append(user_text)
                 result = generate_ai_reply_want(state["answers"])
+                img_url = generate_summary_image("やりたいこと診断", state["answers"], result)
                 state["used"] = True
                 user_states[user_id] = state
-                return result
+                return [{"type": "text", "text": result}, {"type": "image", "originalContentUrl": img_url, "previewImageUrl": img_url}]
 
 
 def generate_ai_reply_self(answers):
-    prompt = f"""
-ユーザーの回答は以下です：
-{answers}
-
-この人の「自己理解診断」の結果をまとめてね。
-・タイプ名（◯◯タイプ）
-・強み（理由つき）
-・課題（理由つき）
-・自己実現のヒント（理由つき）
-をLUAらしく、親しみやすい日本語で答えてください。
-"""
-
+    # フォールバック前提のAI呼び出し
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
                 {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": f"ユーザーの回答: {answers}\n自己理解診断の結果をまとめて。"}
             ],
-            max_completion_tokens=500,
-            temperature=0.8
+            max_completion_tokens=400
         )
         raw = res.choices[0].message.content.strip()
         if not raw:
-            raise ValueError("Empty response")
-
-        # 抽出処理
-        lines = raw.split("\n")
-        t, s, k, h = "不明", "不明", "不明", "不明"
-        for line in lines:
-            if "タイプ" in line:
-                t = line.strip()
-            elif "強み" in line:
-                s = line.strip()
-            elif "課題" in line:
-                k = line.strip()
-            elif "ヒント" in line:
-                h = line.strip()
-
-        content = f"{t}\n{s}\n{k}\n{h}"
-
+            raise ValueError("Empty AI response")
+        return raw
     except Exception as e:
-        print("OpenAI error self:", e)
-        content = (
-            "🚀 あなたは「前向きタイプ」っぽいかも！（仮診断）\n"
-            "✨ 強み: 新しいことを楽しめる！\n"
-            "🌙 課題: 少し具体化が苦手かもね！\n"
-            "💡 ヒント: 小さな一歩から始めると続けやすいよ！"
-        )
+        print("AI error self:", e)
+        return "🚀 あなたは「前向きタイプ」かも！✨ 新しいことを楽しめる一方、具体化は少し苦手かも。💡 小さな一歩から始めると続けやすいよ！"
 
-    comment = "🪞 内省コメント: どこが当たっていて、どこが違うと感じるかを考えてみるといいかも！その違和感も自己理解のヒントになりそうだよ！"
-    return content + "\n\n" + comment
-
-# ===== やりたいこと診断の結果生成 =====
 def generate_ai_reply_want(answers):
-    prompt = f"""
-ユーザーの回答は以下です：
-{answers}
-
-この人の「やりたいこと診断」の結果をまとめてね。
-・やりたいこと（仮説）
-・そのやりたいことを実現した未来の姿
-・今すぐできる小さな一歩
-をLUAらしく、親しみやすい日本語で答えてください。
-"""
-
     try:
         res = client.chat.completions.create(
             model="gpt-5-nano",
             messages=[
                 {"role": "system", "content": "あなたはLUAという明るく親しみやすいAIキャラクターです。"},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": f"ユーザーの回答: {answers}\nやりたいこと診断の結果をまとめて。"}
             ],
-            max_completion_tokens=500,
-            temperature=0.8
+            max_completion_tokens=400
         )
         raw = res.choices[0].message.content.strip()
-        print("Raw AI output (want):", repr(raw))  # デバッグ
-
         if not raw:
-            raise ValueError("Empty response from OpenAI")
+            raise ValueError("Empty AI response")
+        return raw
+    except Exception as e:
+        print("AI error want:", e)
+        return "🌈 やりたいこと診断結果\n🎯 やりたいこと: 自分のやりたいことを形にしたい！\n✨ 実現したときの姿: 自分らしく笑顔で取り組む未来！\n💡 実現への一歩: まずは小さな挑戦から！"
 
-        # 抽出処理
-        lines = raw.split("\n")
-        want, vision, step = "不明", "不明", "不明"
-        for line in lines:
-            if "やりたい" in line or "したい" in line:
-                want = line.strip()
-            elif "姿" in line or "未来" in line:
-                vision = line.strip()
-            elif "一歩" in line or "まず" in line or "小さく" in line:
-                step = line.strip()
-
-        # Fallback（全部不明なら固定メッセージ）
-        if all(x == "不明" for x in [want, vision, step]):
-            raise ValueError("Parsed values are all '不明'")
-
-        content = (
-            "🌈 やりたいこと診断結果\n"
-            f"🎯 やりたいこと: {want}\n"
-            f"✨ 実現したときの姿: {vision}\n"
-            f"💡 実現への一歩: {step}"
+def generate_summary_image(title, answers, result_text):
+    try:
+        # ユーザーの回答からイメージを作成
+        prompt = (
+            f"カードデザイン風で、ポップで温かい雰囲気。"
+            f"character.png のキャラクター（性別不詳の回答者）が『{title}』の診断に取り組んでいる様子。"
+            f"隣に LUA.png の女の子キャラ（LUA）が励ましている。"
+            f"ユーザーの回答内容に基づいて、未来像やシーンをわくわく感のある形で描いてください。"
+            f"背景や状況は以下を参考に: {answers} / {result_text}。"
+            f"キャラの表情やポーズも内容に合わせて変化させる。"
+            f"テキストは含めず。"
         )
+
+        with open("static/character.png", "rb") as char_img, open("static/lua.png", "rb") as lua_img:
+            res = client.images.edit(
+                model="gpt-image-1",
+                prompt=prompt,
+                images=[char_img, lua_img],
+                size="1024x1024"
+            )
+
+        return res.data[0].url
 
     except Exception as e:
-        print("OpenAI error want:", e)
-        content = (
-            "🌈 やりたいこと診断結果\n"
-            "🎯 やりたいこと: 自分のやりたいことを形にしたい気持ちがあるみたい！\n"
-            "✨ 実現したときの姿: 自分らしく笑顔で取り組んでいる姿が想像できるよ！\n"
-            "💡 実現への一歩: まずは小さな挑戦をひとつ始めてみよう！"
-        )
+        print("Image generation error:", e)
+        return "https://placekitten.com/512/512"
 
-    comment = "🪞 内省コメント: どこがワクワクして、どこがモヤモヤするかを考えてみると、新しいヒントになりそうだよ！"
-    return content + "\n\n" + comment
-
-    
-def reply_to_line(reply_token, message):
+def reply_to_line(reply_token, messages):
     url = "https://api.line.me/v2/bot/message/reply"
     headers = {
         "Content-Type": "application/json",
@@ -283,7 +236,7 @@ def reply_to_line(reply_token, message):
     }
     payload = {
         "replyToken": reply_token,
-        "messages": [{"type": "text", "text": message}]
+        "messages": messages
     }
     res = requests.post(url, headers=headers, json=payload)
     print("LINE API response:", res.status_code, res.text)
