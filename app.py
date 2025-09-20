@@ -3,6 +3,7 @@ import os
 import requests
 from openai import OpenAI
 import random
+import textwrap
 
 app = Flask(__name__)
 
@@ -201,32 +202,65 @@ def generate_ai_reply_want(answers):
         print("AI error want:", e)
         return "🌈 やりたいこと診断結果\n🎯 やりたいこと: 自分のやりたいことを形にしたい！\n✨ 実現したときの姿: 自分らしく笑顔で取り組む未来！\n💡 実現への一歩: まずは小さな挑戦から！"
 
+
+def _answers_to_scene_hint(title: str, answers: list[str], result_text: str, max_len: int = 280) -> str:
+    """回答を短いシーン指示に圧縮（英語メイン＋日本語少し）。"""
+    # ざっくり抽出（最後の回答を強めに反映）
+    last = (answers[-1] if answers else "")[:120]
+    joined = " / ".join(answers)[-200:]
+    raw = f"{title}: {last}. {joined}. {result_text[:160]}"
+    hint = raw.replace("\n", " ").strip()
+    if len(hint) > max_len:
+        hint = hint[:max_len].rsplit(" ", 1)[0] + "..."
+    # 英語の誘導語（画像編集の安定化）
+    return (
+        "Make LUABIT (the white, kawaii rabbit mascot) actively doing the user's goal, "
+        "while LUA (the teal-haired girl) appears smaller at the side, cheering warmly. "
+        "Scene to reflect: " + hint
+    )
+
 def generate_summary_image(title, answers, result_text):
+    """
+    1) static/base_scene.png（LUA＋LUABITの合成ベース）を読み込み
+    2) 回答に合わせたシーン説明を付与して images.edit で加工
+    3) 生成URLをそのまま返す（LINEへ直接送信）
+    """
     try:
-        # 回答をそのまま反映して未来像を描かせる
-        prompt = (
-            f"カードデザイン風で、ポップで温かい雰囲気。"
-            f"static/character.png のキャラクター（性別不詳の回答者）が『{title}』に取り組んでいる様子。"
-            f"隣に static/LUA.png の女の子キャラ（LUA）が励ましている。"
-            f"ユーザーの回答内容をもとに、未来像やシーンをわくわく感のある形で描いてください。"
-            f"参考になる回答内容: {answers} / {result_text}。"
-            f"キャラの表情やポーズも内容に合わせて変化させる。"
-            f"テキストは含めず。"
+        scene_hint = _answers_to_scene_hint(title, answers, result_text)
+
+        # 絵柄の固定（ブランド一貫性）
+        style_directive = (
+            "Kawaii, bright, share-worthy card look. Keep LUABIT in the center as main hero, "
+            "cute proportions (Hello-Kitty-like balance, soft round forms), gentle smile, "
+            "mint/blue accents and chest emblem. Keep LUA small on the side, supportive pose, "
+            "same character model as base. Clean background with subtle pops; no text; high quality."
         )
 
-        with open("static/character.png", "rb") as char_img, open("static/lua.png", "rb") as lua_img:
+        prompt = textwrap.dedent(f"""
+            Edit the provided base image to visualize the user's future scene.
+            {style_directive}
+            {scene_hint}
+            Preserve character identities and colors. Keep composition readable for social sharing.
+        """).strip()
+
+        # 合成済みのベース画像（LUA＋LUABIT）を編集
+        with open("static/base_scene.png", "rb") as base_img:
             res = client.images.edit(
                 model="gpt-image-1",
                 prompt=prompt,
-                images=[char_img, lua_img],
+                image=base_img,            # ← 単数形
                 size="1024x1024"
             )
 
-        return res.data[0].url
+        url = res.data[0].url.strip()
+        if not url:
+            raise ValueError("Empty image URL")
+        return url
 
     except Exception as e:
         print("Image generation error:", e)
-        return "https://placekitten.com/512/512"
+        # フォールバック（サービス継続性を優先）
+        return "https://placekitten.com/1024/1024"
 
 def reply_to_line(reply_token, messages):
     url = "https://api.line.me/v2/bot/message/reply"
