@@ -41,6 +41,25 @@ def push():
     print("img_url:", img_url)
     print("=========================")
 
+  # 画像をダウンロードして static に保存
+    img_url = None
+    if temp_img_url:
+        try:
+            r = requests.get(temp_img_url, stream=True)
+            if r.status_code == 200:
+                filename = f"diagnosis_{uuid.uuid4().hex}.png"
+                filepath = os.path.join("static", filename)
+                with open(filepath, "wb") as f:
+                    for chunk in r.iter_content(1024):
+                        f.write(chunk)
+                # 永続URL
+                img_url = f"https://line-yaritai-bot.onrender.com/static/{filename}"
+                print("Saved image to:", img_url)
+            else:
+                print("Image download failed:", r.status_code)
+        except Exception as e:
+            print("Error saving image:", e)
+    
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
 
