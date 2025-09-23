@@ -6,6 +6,8 @@ import os, requests
 app = Flask(__name__)
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_USER_ID = os.getenv("LINE_USER_ID")
+# ngrokで表示されたURLをここに設定（または環境変数から取る）
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://tornadolike-atactic-camelia.ngrok-free.dev/")
 
 def push_to_line(text, img_url=None):
     url = "https://api.line.me/v2/bot/message/push"
@@ -42,8 +44,8 @@ def push():
             with open(filepath, "wb") as f:
                 f.write(image_bytes)
 
-            # 公開URLを組み立て
-            img_url = f"{request.host_url}static/{filename}"
+            # ngrokの公開URLを使って外部アクセス可能にする
+            img_url = f"{PUBLIC_BASE_URL}static/{filename}"
             print("Saved image to:", img_url)
 
         except Exception as e:
