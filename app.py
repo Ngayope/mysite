@@ -33,28 +33,27 @@ def push_to_line(text, img_url=None):
 def push():
     data = request.json or {}
     text = data.get("text", "診断結果（ダミー）")
-    img_b64 = data.get("img_b64")
+    img_url_from_gpt = data.get("img_url")
 
     img_url = None
-    if img_b64:
+    if img_url_from_gpt:
         try:
-            image_bytes = base64.b64decode(img_b64)
-            print("Decoded image size:", len(image_bytes))
-
+            # 画像をダウンロード
+            res = requests.get(img_url_from_gpt)
+            res.raise_for_status()
             filename = f"diagnosis_{uuid.uuid4().hex}.png"
             static_dir = os.path.join(os.getcwd(), "static")
             os.makedirs(static_dir, exist_ok=True)
             filepath = os.path.join(static_dir, filename)
-
             with open(filepath, "wb") as f:
-                f.write(image_bytes)
-            print("File actually written:", filepath, "size:", os.path.getsize(filepath))
+                f.write(res.content)
 
+            # 公開URLに変換
             img_url = f"{PUBLIC_BASE_URL}static/{filename}"
-            print("Public URL:", img_url)
+            print("Saved image to:", img_url)
 
         except Exception as e:
-            print("Error saving base64 image:", e)
+            print("Error downloading image:", e)
 
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
