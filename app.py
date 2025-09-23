@@ -1,4 +1,3 @@
-import base64
 import uuid
 from flask import Flask, request, jsonify, send_from_directory
 import os, requests
@@ -39,24 +38,31 @@ def push():
     if img_url_from_gpt:
         try:
             # 画像をダウンロード
-            res = requests.get(img_url_from_gpt)
+            res = requests.get(img_url_from_gpt, timeout=15)  # タイムアウトを追加
             res.raise_for_status()
+
             filename = f"diagnosis_{uuid.uuid4().hex}.png"
             static_dir = os.path.join(os.getcwd(), "static")
             os.makedirs(static_dir, exist_ok=True)
             filepath = os.path.join(static_dir, filename)
+
             with open(filepath, "wb") as f:
                 f.write(res.content)
 
             # 公開URLに変換
             img_url = f"{PUBLIC_BASE_URL}static/{filename}"
-            print("Saved image to:", img_url)
+            print("Saved and re-hosted image:", img_url)
 
         except Exception as e:
             print("Error downloading image:", e)
 
     status, res_text = push_to_line(text, img_url)
-    return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
+    return jsonify({
+        "status": status,
+        "response": res_text,
+        "text": text,
+        "img_url": img_url
+    })
 
 @app.route("/static/<path:filename>")
 def serve_static(filename):
@@ -64,4 +70,4 @@ def serve_static(filename):
 
 @app.route("/")
 def home():
-    return "Flask bridge with base64 image is running!"
+    return "Flask bridge is running with image re-hosting!"
