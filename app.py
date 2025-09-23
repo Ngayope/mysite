@@ -37,25 +37,24 @@ def push():
 
     img_url = None
     if img_b64:
-    try:
-        image_bytes = base64.b64decode(img_b64)
-        print("Decoded image size:", len(image_bytes))
+        try:
+            image_bytes = base64.b64decode(img_b64)
+            print("Decoded image size:", len(image_bytes))
 
-        filename = f"diagnosis_{uuid.uuid4().hex}.png"
-        static_dir = os.path.join(os.getcwd(), "static")
-        os.makedirs(static_dir, exist_ok=True)
-        filepath = os.path.join(static_dir, filename)
+            filename = f"diagnosis_{uuid.uuid4().hex}.png"
+            static_dir = os.path.join(os.getcwd(), "static")
+            os.makedirs(static_dir, exist_ok=True)
+            filepath = os.path.join(static_dir, filename)
 
-        with open(filepath, "wb") as f:
-            f.write(image_bytes)
-        print("File actually written:", filepath, "size:", os.path.getsize(filepath))
+            with open(filepath, "wb") as f:
+                f.write(image_bytes)
+            print("File actually written:", filepath, "size:", os.path.getsize(filepath))
 
-        img_url = f"{PUBLIC_BASE_URL}static/{filename}"
-        print("Public URL:", img_url)
+            img_url = f"{PUBLIC_BASE_URL}static/{filename}"
+            print("Public URL:", img_url)
 
-    except Exception as e:
-        print("Error saving base64 image:", e)
-
+        except Exception as e:
+            print("Error saving base64 image:", e)
 
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
