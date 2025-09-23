@@ -5,6 +5,12 @@ app = Flask(__name__)
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_USER_ID = os.getenv("LINE_USER_ID")
 
+# === ここで static フォルダを指定 ===
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    return send_from_directory("static", filename)
+
+
 def push_to_line(text, img_url=None):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
