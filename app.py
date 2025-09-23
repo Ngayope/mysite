@@ -1,29 +1,18 @@
-import uuid
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 import os, requests
 
 app = Flask(__name__)
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_USER_ID = os.getenv("LINE_USER_ID")
 
-# Renderの公開URLをデフォルトに設定
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://line-yaritai-bot.onrender.com/")
-
-def push_to_line(text, img_url=None):
+def push_to_line(user_id, text):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
     }
     messages = [{"type": "text", "text": text}]
-    if img_url:
-        messages.append({
-            "type": "image",
-            "originalContentUrl": img_url,
-            "previewImageUrl": img_url
-        })
-    payload = {"to": LINE_USER_ID, "messages": messages}
+    payload = {"to": user_id, "messages": messages}
     res = requests.post(url, headers=headers, json=payload)
     print("LINE API response:", res.status_code, res.text)
     return res.status_code, res.text
@@ -32,16 +21,14 @@ def push_to_line(text, img_url=None):
 def push():
     data = request.json or {}
     text = data.get("text", "診断結果（ダミー）")
-    img_url = data.get("img_url")
+    user_id = data.get("to")
 
-    status, res_text = push_to_line(text, img_url)
-    return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
+    if not user_id:
+        return jsonify({"error": "user_id (to) is required"}), 400
 
-
-@app.route("/static/<path:filename>")
-def serve_static(filename):
-    return send_from_directory("static", filename)
+    status, res_text = push_to_line(user_id, text)
+    return jsonify({"status": status, "response": res_text, "text": text, "to": user_id})
 
 @app.route("/")
 def home():
-    return "Flask bridge is running with image re-hosting!"
+    return "Flask bridge for LINE text push is running!"
