@@ -33,15 +33,14 @@ def push_to_line(text, img_url=None):
 def push():
     data = request.json or {}
     text = data.get("text", "診断結果（ダミー）")
-    img_url = data.get("img_url")
+    temp_img_url = data.get("img_url")  # ← ここで定義を先に！
 
-    # ここで受け取った内容をログに出す
     print("=== Received from GPT ===")
     print("text:", text)
-    print("img_url:", img_url)
+    print("temp_img_url:", temp_img_url)
     print("=========================")
 
-  # 画像をダウンロードして static に保存
+    # 画像をダウンロードして static に保存
     img_url = None
     if temp_img_url:
         try:
@@ -59,9 +58,10 @@ def push():
                 print("Image download failed:", r.status_code)
         except Exception as e:
             print("Error saving image:", e)
-    
+
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
+
 
 @app.route("/")
 def home():
