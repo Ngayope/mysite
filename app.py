@@ -1,13 +1,15 @@
 import base64
 import uuid
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import os, requests
 
 app = Flask(__name__)
+
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_USER_ID = os.getenv("LINE_USER_ID")
-# ngrokで表示されたURLをここに設定（または環境変数から取る）
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://tornadolike-atactic-camelia.ngrok-free.dev/")
+
+# Renderの公開URLをデフォルトに設定
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://line-yaritai-bot.onrender.com/")
 
 def push_to_line(text, img_url=None):
     url = "https://api.line.me/v2/bot/message/push"
@@ -41,10 +43,13 @@ def push():
             filename = f"diagnosis_{uuid.uuid4().hex}.png"
             filepath = os.path.join("static", filename)
 
+            # staticフォルダがなければ作成
+            os.makedirs("static", exist_ok=True)
+
             with open(filepath, "wb") as f:
                 f.write(image_bytes)
 
-            # ngrokの公開URLを使って外部アクセス可能にする
+            # 公開URLを組み立て（RenderのURL）
             img_url = f"{PUBLIC_BASE_URL}static/{filename}"
             print("Saved image to:", img_url)
 
@@ -53,6 +58,10 @@ def push():
 
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
+
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory("static", filename)
 
 @app.route("/")
 def home():
