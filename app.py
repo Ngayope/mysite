@@ -25,13 +25,18 @@ def push_to_line(text, img_url=None):
 
 @app.route("/push", methods=["POST"])
 def push():
-    # カスタムGPTから { "text": "...", "img_url": "..." } を受け取る想定
     data = request.json or {}
     text = data.get("text", "診断結果（ダミー）")
     img_url = data.get("img_url")
 
+    # ここで受け取った内容をログに出す
+    print("=== Received from GPT ===")
+    print("text:", text)
+    print("img_url:", img_url)
+    print("=========================")
+
     status, res_text = push_to_line(text, img_url)
-    return jsonify({"status": status, "response": res_text})
+    return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
 
 @app.route("/")
 def home():
