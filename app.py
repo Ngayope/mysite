@@ -1,15 +1,15 @@
-from flask import Flask, request, jsonify
+import base64
+import uuid
+from flask import Flask, request, jsonify, send_from_directory
 import os, requests
 
 app = Flask(__name__)
+
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_USER_ID = os.getenv("LINE_USER_ID")
 
-# === ここで static フォルダを指定 ===
-@app.route("/static/<path:filename>")
-def static_files(filename):
-    return send_from_directory("static", filename)
-
+# Renderの公開URLをデフォルトに設定
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://line-yaritai-bot.onrender.com/")
 
 def push_to_line(text, img_url=None):
     url = "https://api.line.me/v2/bot/message/push"
@@ -33,36 +33,36 @@ def push_to_line(text, img_url=None):
 def push():
     data = request.json or {}
     text = data.get("text", "診断結果（ダミー）")
-    temp_img_url = data.get("img_url")  # ← ここで定義を先に！
+    img_b64 = data.get("img_b64")
 
-    print("=== Received from GPT ===")
-    print("text:", text)
-    print("temp_img_url:", temp_img_url)
-    print("=========================")
-
-    # 画像をダウンロードして static に保存
     img_url = None
-    if temp_img_url:
+    if img_b64:
         try:
-            r = requests.get(temp_img_url, stream=True)
-            if r.status_code == 200:
-                filename = f"diagnosis_{uuid.uuid4().hex}.png"
-                filepath = os.path.join("static", filename)
-                with open(filepath, "wb") as f:
-                    for chunk in r.iter_content(1024):
-                        f.write(chunk)
-                # 永続URL
-                img_url = f"https://line-yaritai-bot.onrender.com/static/{filename}"
-                print("Saved image to:", img_url)
-            else:
-                print("Image download failed:", r.status_code)
+            # base64をデコードして保存
+            image_bytes = base64.b64decode(img_b64)
+            filename = f"diagnosis_{uuid.uuid4().hex}.png"
+            filepath = os.path.join("static", filename)
+
+            # staticフォルダがなければ作成
+            os.makedirs("static", exist_ok=True)
+
+            with open(filepath, "wb") as f:
+                f.write(image_bytes)
+
+            # 公開URLを組み立て（RenderのURL）
+            img_url = f"{PUBLIC_BASE_URL}static/{filename}"
+            print("Saved image to:", img_url)
+
         except Exception as e:
-            print("Error saving image:", e)
+            print("Error saving base64 image:", e)
 
     status, res_text = push_to_line(text, img_url)
     return jsonify({"status": status, "response": res_text, "text": text, "img_url": img_url})
 
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory("static", filename)
 
 @app.route("/")
 def home():
-    return "Flask bridge is running!"
+    return "Flask bridge with base64 image is running!"
