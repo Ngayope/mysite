@@ -1,26 +1,47 @@
 from flask import Flask, request, jsonify
-import os, requests
-from threading import Lock
+import os, requests, sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key")
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 FOLLOW_URL = "https://line.me/R/ti/p/@441alvdp"
+DB_PATH = "diagnosis.db"
 
-# --- プロセス内の簡易ストア（無料） ---
-PENDING_RESULTS = {}  # { user_id: text }
-STORE_LOCK = Lock()
+# --- DBユーティリティ ---
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pending_results (
+            user_id TEXT PRIMARY KEY,
+            text TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 def store_result(user_id, text):
-    with STORE_LOCK:
-        PENDING_RESULTS[user_id] = text
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO pending_results (user_id, text) VALUES (?, ?)", (user_id, text))
+    conn.commit()
+    conn.close()
 
 def pop_result(user_id):
-    with STORE_LOCK:
-        return PENDING_RESULTS.pop(user_id, None)
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT text FROM pending_results WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("DELETE FROM pending_results WHERE user_id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+        return row[0]
+    conn.close()
+    return None
 
-# --- LINE API ラッパ ---
+# --- LINE API ---
 def push_to_line(user_id, text):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
@@ -33,13 +54,12 @@ def push_to_line(user_id, text):
     return res.status_code, res.text
 
 def get_profile(user_id):
-    """フォロー確認：取得できたらフォロー済み、できなければ未フォロー"""
     headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
     url = f"https://api.line.me/v2/bot/profile/{user_id}"
     res = requests.get(url, headers=headers, timeout=10)
     return res if res.status_code == 200 else None
 
-# --- ChatGPT→Flask：診断結果の受け皿 ---
+# --- ChatGPT→Flask ---
 @app.route("/push", methods=["POST"])
 def push():
     data = request.json or {}
@@ -49,7 +69,7 @@ def push():
     if not user_id:
         return jsonify({"error": "user_id (to) is required"}), 400
 
-    # 未送信結果を保存（フォロー完了を待てるようにする）
+    # 保存
     store_result(user_id, text)
 
     # フォロー確認
@@ -65,28 +85,25 @@ def push():
     # フォロー済みなら即送信
     status, res_text = push_to_line(user_id, text)
     if status == 200:
-        # 送れたら保留を消しておく（念のため）
         pop_result(user_id)
     return jsonify({"status": status, "response": res_text, "text": text, "to": user_id})
 
-# --- LINE Webhook：フォロー検知で送信 ---
+# --- LINE Webhook ---
 @app.route("/webhook", methods=["POST"])
 def webhook():
     body = request.json or {}
     for event in body.get("events", []):
-        etype = event.get("type")
-        if etype == "follow":
+        if event.get("type") == "follow":
             user_id = event["source"]["userId"]
             text = pop_result(user_id)
             if text:
                 push_to_line(user_id, text)
-        # 必要なら他のイベントタイプもここで処理
     return "OK"
-
-@app.route("/healthz")
-def healthz():
-    return "ok"
 
 @app.route("/")
 def home():
     return "Flask bridge for LINE text push is running!"
+
+if __name__ == "__main__":
+    init_db()
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
