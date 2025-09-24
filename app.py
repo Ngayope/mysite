@@ -1,11 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 import os, requests, sqlite3
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key")
 
+LINE_CHANNEL_ID = os.getenv("LINE_CHANNEL_ID")  # 2008105857
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 FOLLOW_URL = "https://line.me/R/ti/p/@441alvdp"
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://line-yaritai-bot.onrender.com/")
 DB_PATH = "diagnosis.db"
 
 # --- DBユーティリティ ---
@@ -16,6 +19,11 @@ def init_db():
         CREATE TABLE IF NOT EXISTS pending_results (
             user_id TEXT PRIMARY KEY,
             text TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY
         )
     """)
     conn.commit()
@@ -41,6 +49,13 @@ def pop_result(user_id):
     conn.close()
     return None
 
+def save_user(user_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+    conn.commit()
+    conn.close()
+
 # --- LINE API ---
 def push_to_line(user_id, text):
     url = "https://api.line.me/v2/bot/message/push"
@@ -58,6 +73,43 @@ def get_profile(user_id):
     url = f"https://api.line.me/v2/bot/profile/{user_id}"
     res = requests.get(url, headers=headers, timeout=10)
     return res if res.status_code == 200 else None
+
+# --- LINEログイン ---
+@app.route("/login")
+def login():
+    redirect_uri = f"{PUBLIC_BASE_URL}callback"
+    url = (
+        "https://access.line.me/oauth2/v2.1/authorize"
+        f"?response_type=code&client_id={LINE_CHANNEL_ID}"
+        f"&redirect_uri={redirect_uri}"
+        "&state=xyz&scope=openid%20profile"
+    )
+    return redirect(url)
+
+@app.route("/callback")
+def callback():
+    code = request.args.get("code")
+    token_url = "https://api.line.me/oauth2/v2.1/token"
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": f"{PUBLIC_BASE_URL}callback",
+        "client_id": LINE_CHANNEL_ID,
+        "client_secret": LINE_CHANNEL_SECRET,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    token_res = requests.post(token_url, data=data, headers=headers).json()
+    access_token = token_res.get("access_token")
+
+    # ユーザープロフィール取得
+    profile_url = "https://api.line.me/v2/profile"
+    profile_res = requests.get(profile_url, headers={"Authorization": f"Bearer {access_token}"}).json()
+    user_id = profile_res["userId"]
+
+    # DBに保存
+    save_user(user_id)
+
+    return f"ログイン完了！ userId={user_id}"
 
 # --- ChatGPT→Flask ---
 @app.route("/push", methods=["POST"])
@@ -102,7 +154,7 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "Flask bridge for LINE text push is running!"
+    return "Flask bridge with LINE login and push is running!"
 
 if __name__ == "__main__":
     init_db()
