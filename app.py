@@ -4,9 +4,9 @@ import os, requests, sqlite3
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key")
 
-LINE_CHANNEL_ID = os.getenv("LINE_CHANNEL_ID")  # 2008105857
-LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+LINE_CHANNEL_ID = os.getenv("LINE_CHANNEL_ID")  # ログインチャネルID
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")  # ログインチャネルのシークレット
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")  # Messaging API用
 FOLLOW_URL = "https://line.me/R/ti/p/@441alvdp"
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://line-yaritai-bot.onrender.com/")
 DB_PATH = "diagnosis.db"
