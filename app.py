@@ -114,22 +114,75 @@ def callback():
 
     # HTML返却
     return f"""
-    <html>
-      <head><meta charset="utf-8"><title>ログイン完了</title></head>
-      <body style="text-align:center;font-family:sans-serif;background:#f7faff;padding:40px;">
-        <div style="background:white;border-radius:16px;padding:30px;max-width:500px;margin:auto;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
-          <h1 style="color:#06c755;">✅ ログイン完了！</h1>
-          <p>次は LUA を友だち追加して診断結果を受け取りましょう📩</p>
-          <a href="https://line.me/R/ti/p/@441alvdp" target="_blank">
-            <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" 
-                 alt="友だち追加" 
-                 style="width:200px;margin-top:20px;">
-          </a>
-          <br>
-          <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター" style="margin-top:20px;max-width:250px;border-radius:12px;">
-        </div>
-      </body>
-    </html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>ログイン完了だよ！</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", sans-serif;
+        background: #f0fdf4;
+        text-align: center;
+        padding: 40px;
+        color: #333;
+      }
+      .bubble {
+        display: inline-block;
+        background: #fff;
+        border-radius: 18px;
+        padding: 20px 25px;
+        margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        text-align: left;
+        max-width: 420px;
+      }
+      .bubble h2 {
+        color: #06c755;
+        font-size: 18px;
+        margin: 0 0 8px 0;
+      }
+      .userid {
+        font-size: 14px;
+        background: #f7f7f7;
+        padding: 10px;
+        border-radius: 8px;
+        word-break: break-all;
+        margin-top: 10px;
+        border: 1px dashed #06c755;
+      }
+      img {
+        margin-top: 25px;
+        max-width: 200px;
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 style="color:#06c755;">✨ ログイン完了だよ ✨</h1>
+    <p>やったね！あとちょっとで診断結果をLINEに届けられるよ📩</p>
+
+    <div class="bubble">
+      <h2>① LUAを友だち追加しよう！</h2>
+      <p>ここを押すと追加できるよ👇</p>
+      <a href="https://line.me/R/ti/p/@441alvdp" target="_blank">
+        <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加">
+      </a>
+    </div>
+
+    <div class="bubble">
+      <h2>② あなたのIDを教えてね</h2>
+      <p>下のIDをコピーして、ChatGPTに「OK」と一緒に貼り付けてね！</p>
+      <div class="userid">{user_id}</div>
+    </div>
+
+    <p style="margin-top:20px;font-size:14px;color:#555;">
+      LUAとつながったら、すぐに診断結果をお届けするね🌙✨
+    </p>
+
+    <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター">
+  </body>
+</html>
+
     """
 
 
