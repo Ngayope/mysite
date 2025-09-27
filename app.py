@@ -154,11 +154,13 @@ def callback():
         <div class="card">
           <h1>✅ ログイン完了！</h1>
           <p>次は LUA を友だち追加して診断結果を受け取りましょう📩</p>
-          <a class="btn" href="https://line.me/R/ti/p/@441alvdp" target="_blank">友だち追加する</a>
+          <a href="https://line.me/R/ti/p/@441alvdp" target="_blank">
+            <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" 
+                 alt="友だち追加" 
+                 style="width:200px; margin-top:20px;">
+          </a>
           <br>
           <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター">
-          <br>
-          <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加">
         </div>
       </body>
     </html>
