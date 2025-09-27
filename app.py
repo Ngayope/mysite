@@ -105,7 +105,12 @@ def callback():
     # ユーザープロフィール取得
     profile_url = "https://api.line.me/v2/profile"
     profile_res = requests.get(profile_url, headers={"Authorization": f"Bearer {access_token}"}).json()
-    user_id = profile_res["userId"]
+    print("Profile response:", profile_res)
+
+    user_id = profile_res.get("userId")
+    if not user_id:
+        return f"ユーザーID取得失敗: {profile_res}"
+
 
     # DBに保存
     save_user(user_id)
