@@ -102,20 +102,68 @@ def callback():
     token_res = requests.post(token_url, data=data, headers=headers).json()
     access_token = token_res.get("access_token")
 
-    # ユーザープロフィール取得
     profile_url = "https://api.line.me/v2/profile"
     profile_res = requests.get(profile_url, headers={"Authorization": f"Bearer {access_token}"}).json()
-    print("Profile response:", profile_res)
-
     user_id = profile_res.get("userId")
-    if not user_id:
-        return f"ユーザーID取得失敗: {profile_res}"
 
+    if user_id:
+        save_user(user_id)
 
-    # DBに保存
-    save_user(user_id)
+    # HTMLで見やすい完了画面を返す（LUAイラスト追加）
+    return f"""
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>ログイン完了</title>
+        <style>
+          body {{
+            font-family: "Helvetica Neue", sans-serif;
+            text-align: center;
+            background: #f7faff;
+            padding: 40px;
+          }}
+          .card {{
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            margin: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          }}
+          h1 {{
+            color: #06c755;
+          }}
+          .btn {{
+            display: inline-block;
+            padding: 12px 24px;
+            margin-top: 20px;
+            background: #06c755;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+          }}
+          img {{
+            margin-top: 20px;
+            max-width: 250px;
+            border-radius: 12px;
+          }}
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>✅ ログイン完了！</h1>
+          <p>次は LUA を友だち追加して診断結果を受け取りましょう📩</p>
+          <a class="btn" href="https://line.me/R/ti/p/@441alvdp" target="_blank">友だち追加する</a>
+          <br>
+          <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター">
+          <br>
+          <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加">
+        </div>
+      </body>
+    </html>
+    """
 
-    return f"ログイン完了！ userId={user_id}"
 
 # --- ChatGPT→Flask ---
 @app.route("/push", methods=["POST"])
@@ -127,24 +175,22 @@ def push():
     if not user_id:
         return jsonify({"error": "user_id (to) is required"}), 400
 
-    # 診断結果を保存（まだ未フォローかもしれない）
+    # 診断結果を保存（未送信でも保持する）
     store_result(user_id, text)
 
-    # フォロー確認
-    profile = get_profile(user_id)
-    if not profile:
-        return jsonify({
-            "error": "未フォロー",
-            "message": "まずは公式アカウントを友だち追加してください",
-            "follow_url": FOLLOW_URL,
-            "to": user_id
-        }), 400
-
-    # フォロー済みなら即送信
+    # Push送信
     status, res_text = push_to_line(user_id, text)
+
+    # 成功したらDBから削除
     if status == 200:
         pop_result(user_id)
-    return jsonify({"status": status, "response": res_text, "text": text, "to": user_id})
+
+    return jsonify({
+        "status": status,
+        "response": res_text,
+        "text": text,
+        "to": user_id
+    })
 
 
 # --- LINE Webhook ---
