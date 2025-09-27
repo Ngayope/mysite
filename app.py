@@ -112,21 +112,21 @@ def callback():
     if user_id:
         save_user(user_id)
 
-    # HTML返却
+    # HTML返却（f-stringで展開するのは user_id と PUBLIC_BASE_URL だけ）
     return f"""
 <html>
   <head>
     <meta charset="utf-8">
     <title>ログイン完了だよ！</title>
     <style>
-      body {
+      body {{
         font-family: "Helvetica Neue", sans-serif;
         background: #f0fdf4;
         text-align: center;
         padding: 40px;
         color: #333;
-      }
-      .bubble {
+      }}
+      .bubble {{
         display: inline-block;
         background: #fff;
         border-radius: 18px;
@@ -135,13 +135,13 @@ def callback():
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         text-align: left;
         max-width: 420px;
-      }
-      .bubble h2 {
+      }}
+      .bubble h2 {{
         color: #06c755;
         font-size: 18px;
         margin: 0 0 8px 0;
-      }
-      .userid {
+      }}
+      .userid {{
         font-size: 14px;
         background: #f7f7f7;
         padding: 10px;
@@ -149,12 +149,12 @@ def callback():
         word-break: break-all;
         margin-top: 10px;
         border: 1px dashed #06c755;
-      }
-      img {
+      }}
+      img {{
         margin-top: 25px;
         max-width: 200px;
         border-radius: 12px;
-      }
+      }}
     </style>
   </head>
   <body>
@@ -182,8 +182,8 @@ def callback():
     <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター">
   </body>
 </html>
+"""
 
-    """
 
 
 # --- ChatGPT→Flask ---
