@@ -162,6 +162,7 @@ def webhook():
 def home():
     return "Flask bridge with LINE login and push is running!"
 
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
