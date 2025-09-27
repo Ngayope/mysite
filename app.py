@@ -175,10 +175,10 @@ def push():
     if not user_id:
         return jsonify({"error": "user_id (to) is required"}), 400
 
-    # 診断結果を保存（未送信でも保持する）
+    # 診断結果を保存（未送信時の保険）
     store_result(user_id, text)
 
-    # Push送信
+    # Push送信（これだけで判定OK）
     status, res_text = push_to_line(user_id, text)
 
     # 成功したらDBから削除
