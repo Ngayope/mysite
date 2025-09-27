@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, redirect
 import os, requests, sqlite3
+from jwt.algorithms import RSAAlgorithm
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key")
