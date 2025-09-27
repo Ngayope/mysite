@@ -127,7 +127,7 @@ def push():
     if not user_id:
         return jsonify({"error": "user_id (to) is required"}), 400
 
-    # 保存
+    # 診断結果を保存（まだ未フォローかもしれない）
     store_result(user_id, text)
 
     # フォロー確認
@@ -146,6 +146,7 @@ def push():
         pop_result(user_id)
     return jsonify({"status": status, "response": res_text, "text": text, "to": user_id})
 
+
 # --- LINE Webhook ---
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -153,10 +154,14 @@ def webhook():
     for event in body.get("events", []):
         if event.get("type") == "follow":
             user_id = event["source"]["userId"]
+            # Push用userIdをDBに保存
+            save_user(user_id)
+            # もし診断結果が待機中なら送信
             text = pop_result(user_id)
             if text:
                 push_to_line(user_id, text)
     return "OK"
+
 
 @app.route("/")
 def home():
