@@ -102,71 +102,32 @@ def callback():
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     token_res = requests.post(token_url, data=data, headers=headers).json()
 
-    # id_token から userId を取り出す
-    id_token = token_res.get("id_token")
+    # アクセストークンからユーザープロフィール取得
+    access_token = token_res.get("access_token")
     user_id = None
-    if id_token:
-        jwks = requests.get("https://api.line.me/oauth2/v2.1/certs").json()
-        key = RSAAlgorithm.from_jwk(jwks["keys"][0])
-        decoded = jwt.decode(id_token, key=key, audience=LINE_CHANNEL_ID, algorithms=["RS256"])
-        user_id = decoded.get("sub")
+    if access_token:
+        profile_url = "https://api.line.me/v2/profile"
+        profile_res = requests.get(profile_url, headers={"Authorization": f"Bearer {access_token}"}).json()
+        user_id = profile_res.get("userId")
 
     if user_id:
         save_user(user_id)
 
-
-    # HTMLで見やすい完了画面を返す（LUAイラスト追加）
+    # HTML返却
     return f"""
     <html>
-      <head>
-        <meta charset="utf-8">
-        <title>ログイン完了</title>
-        <style>
-          body {{
-            font-family: "Helvetica Neue", sans-serif;
-            text-align: center;
-            background: #f7faff;
-            padding: 40px;
-          }}
-          .card {{
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 500px;
-            margin: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-          }}
-          h1 {{
-            color: #06c755;
-          }}
-          .btn {{
-            display: inline-block;
-            padding: 12px 24px;
-            margin-top: 20px;
-            background: #06c755;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 16px;
-          }}
-          img {{
-            margin-top: 20px;
-            max-width: 250px;
-            border-radius: 12px;
-          }}
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1>✅ ログイン完了！</h1>
+      <head><meta charset="utf-8"><title>ログイン完了</title></head>
+      <body style="text-align:center;font-family:sans-serif;background:#f7faff;padding:40px;">
+        <div style="background:white;border-radius:16px;padding:30px;max-width:500px;margin:auto;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+          <h1 style="color:#06c755;">✅ ログイン完了！</h1>
           <p>次は LUA を友だち追加して診断結果を受け取りましょう📩</p>
           <a href="https://line.me/R/ti/p/@441alvdp" target="_blank">
             <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" 
                  alt="友だち追加" 
-                 style="width:200px; margin-top:20px;">
+                 style="width:200px;margin-top:20px;">
           </a>
           <br>
-          <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター">
+          <img src="{PUBLIC_BASE_URL}static/lua_welcome.png" alt="LUAキャラクター" style="margin-top:20px;max-width:250px;border-radius:12px;">
         </div>
       </body>
     </html>
