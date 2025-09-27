@@ -29,6 +29,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 def store_result(user_id, text):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
