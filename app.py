@@ -100,14 +100,19 @@ def callback():
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     token_res = requests.post(token_url, data=data, headers=headers).json()
-    access_token = token_res.get("access_token")
 
-    profile_url = "https://api.line.me/v2/profile"
-    profile_res = requests.get(profile_url, headers={"Authorization": f"Bearer {access_token}"}).json()
-    user_id = profile_res.get("userId")
+    # id_token から userId を取り出す
+    id_token = token_res.get("id_token")
+    user_id = None
+    if id_token:
+        jwks = requests.get("https://api.line.me/oauth2/v2.1/certs").json()
+        key = RSAAlgorithm.from_jwk(jwks["keys"][0])
+        decoded = jwt.decode(id_token, key=key, audience=LINE_CHANNEL_ID, algorithms=["RS256"])
+        user_id = decoded.get("sub")
 
     if user_id:
         save_user(user_id)
+
 
     # HTMLで見やすい完了画面を返す（LUAイラスト追加）
     return f"""
