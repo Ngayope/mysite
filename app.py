@@ -114,85 +114,67 @@ def callback():
 
     # HTML返却（f-stringで展開するのは user_id と PUBLIC_BASE_URL だけ）
     return f"""
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>ログイン完了だよ！</title>
-    <style>
-      body {{
-        font-family: "Helvetica Neue", sans-serif;
-        background: #f0fdf4;
-        text-align: center;
-        padding: 40px;
-        color: #333;
-      }}
-      .bubble {{
-        display: inline-block;
-        background: #fff;
-        border-radius: 18px;
-        padding: 20px 25px;
-        margin: 10px 0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        text-align: left;
-        max-width: 420px;
-      }}
-      .bubble h2 {{
-        color: #06c755;
-        font-size: 18px;
-        margin: 0 0 8px 0;
-      }}
-      .userid {{
-        font-size: 14px;
-        background: #f7f7f7;
-        padding: 10px;
-        border-radius: 8px;
-        word-break: break-all;
-        margin-top: 10px;
-        border: 1px dashed #06c755;
-      }}
-      img {{
-        margin-top: 25px;
-        max-width: 200px;
-        border-radius: 12px;
-      }}
-    </style>
-  </head>
-  <body>
-    <h1 style="color:#06c755;">✨ ログイン完了だよ ✨</h1>
-    <p>やったね！あとちょっとで診断結果をLINEに届けられるよ📩</p>
-
-    <div class="bubble">
-      <h2>① LUAを友だち追加しよう！</h2>
-      <p>ここを押すと追加できるよ👇</p>
-      <a href="https://line.me/R/ti/p/@441alvdp" target="_blank">
-        <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加">
-      </a>
-    </div>
-
-    <div class="bubble">
-      <h2>② あなたのIDを教えてね</h2>
-      <p>下のボタンを押すとコピーできるよ👇</p>
-      <input id="userid" value="{user_id}" readonly 
-             style="width:100%;padding:10px;border-radius:8px;
-                    border:1px dashed #06c755;font-size:14px;
-                    margin-top:5px;text-align:center;">
-      <button onclick="copyUserId()" 
-              style="margin-top:10px;padding:8px 16px;
-                     background:#06c755;color:white;border:none;
-                     border-radius:6px;cursor:pointer;">
-        コピーする📋
-      </button>
-    </div>
-
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>ログイン完了だよ！</title>
+        <style>
+          body {{
+            font-family: "Helvetica Neue", sans-serif;
+            background: #f0fdf4;
+            text-align: center;
+            padding: 40px;
+            color: #333;
+          }}
+          .bubble {{
+            display: inline-block;
+            background: #fff;
+            border-radius: 18px;
+            padding: 20px 25px;
+            margin: 10px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            text-align: left;
+            max-width: 420px;
+          }}
+          .userid {{
+            font-size: 14px;
+            background: #f7f7f7;
+            padding: 10px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin-top: 10px;
+            border: 1px dashed #06c755;
+          }}
+        </style>
+      </head>
+      <body>
+        <h1 style="color:#06c755;">✨ ログイン完了だよ ✨</h1>
+        <p>やったね！あとちょっとで診断結果をLINEに届けられるよ📩</p>
+    
+        <div class="bubble">
+          <h2>② あなたのIDを教えてね</h2>
+          <p>下のボタンを押すとコピーできるよ👇</p>
+          <input id="userid" value="{user_id}" readonly 
+                 style="width:100%;padding:10px;border-radius:8px;
+                        border:1px dashed #06c755;font-size:14px;
+                        margin-top:5px;text-align:center;">
+          <button onclick="copyUserId()" 
+                  style="margin-top:10px;padding:8px 16px;
+                         background:#06c755;color:white;border:none;
+                         border-radius:6px;cursor:pointer;">
+            コピーする📋
+          </button>
+        </div>
+        
     <script>
-    function copyUserId() {
+    function copyUserId() {{
       var copyText = document.getElementById("userid");
       copyText.select();
       copyText.setSelectionRange(0, 99999); // モバイル対応
-      navigator.clipboard.writeText(copyText.value).then(() => {
-        alert("コピーできたよ！ChatGPTに『OK』と一緒に貼り付けてね✨");
-      });
-    }
+      navigator.clipboard.writeText(copyText.value).then(() => {{
+        alert("コピーできたよ！ChatGPTにこのIDを貼り付けてね✨");
+      }});
+    }}
     </script>
 
     <p style="margin-top:20px;font-size:14px;color:#555;">
