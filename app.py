@@ -197,6 +197,20 @@ def callback():
 
 
 # --- ChatGPT→Flask ---
+def push_followup(user_id):
+    followup_text = (
+        "🌟 ちなみに… 🌟\n\n"
+        "LUAは今、あなたの『やりたいこと』をもっと継続的にサポートする "
+        "サービスも準備しているよ！\n\n"
+        "💡 AIでの目標管理\n"
+        "💡 個別コーチング\n"
+        "💡 仲間とつながれるコミュニティ\n\n"
+        "診断で見えた未来を、実際の行動につなげていける場所になる予定✨\n"
+        "正式公開をお楽しみに待っていてね！"
+    )
+    return push_to_line(user_id, followup_text)
+
+
 @app.route("/push", methods=["POST"])
 def push():
     data = request.json or {}
@@ -206,15 +220,12 @@ def push():
     if not user_id:
         return jsonify({"error": "user_id (to) is required"}), 400
 
-    # 診断結果を保存（未送信時の保険）
-    store_result(user_id, text)
-
-    # Push送信（これだけで判定OK）
+    # ① 診断結果を送信
     status, res_text = push_to_line(user_id, text)
 
-    # 成功したらDBから削除
+    # ② 成功したらフォローアップも送信
     if status == 200:
-        pop_result(user_id)
+        push_followup(user_id)
 
     return jsonify({
         "status": status,
@@ -222,6 +233,7 @@ def push():
         "text": text,
         "to": user_id
     })
+
 
 
 # --- LINE Webhook ---
