@@ -150,9 +150,17 @@ def callback():
       <body>
         <h1 style="color:#06c755;">✨ ログイン完了だよ ✨</h1>
         <p>やったね！あとちょっとで診断結果をLINEに届けられるよ📩</p>
-    
+        
+        <div class="bubble"> 
+            <h2>① LUAを友だち追加しよう！</h2> 
+            <p>ここを押すと追加できるよ👇</p> 
+            <a href="https://line.me/R/ti/p/@441alvdp" target="_blank"> 
+                <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加"> 
+            </a> 
+        </div>
+        
         <div class="bubble">
-          <h2>② あなたのIDを教えてね</h2>
+          <h2>② あなたのIDをChatGPTで教えてね</h2>
           <p>下のボタンを押すとコピーできるよ👇</p>
           <input id="userid" value="{user_id}" readonly 
                  style="width:100%;padding:10px;border-radius:8px;
