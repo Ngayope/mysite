@@ -171,9 +171,29 @@ def callback():
 
     <div class="bubble">
       <h2>② あなたのIDを教えてね</h2>
-      <p>下のIDをコピーして、ChatGPTに「OK」と一緒に貼り付けてね！</p>
-      <div class="userid">{user_id}</div>
+      <p>下のボタンを押すとコピーできるよ👇</p>
+      <input id="userid" value="{user_id}" readonly 
+             style="width:100%;padding:10px;border-radius:8px;
+                    border:1px dashed #06c755;font-size:14px;
+                    margin-top:5px;text-align:center;">
+      <button onclick="copyUserId()" 
+              style="margin-top:10px;padding:8px 16px;
+                     background:#06c755;color:white;border:none;
+                     border-radius:6px;cursor:pointer;">
+        コピーする📋
+      </button>
     </div>
+
+    <script>
+    function copyUserId() {
+      var copyText = document.getElementById("userid");
+      copyText.select();
+      copyText.setSelectionRange(0, 99999); // モバイル対応
+      navigator.clipboard.writeText(copyText.value).then(() => {
+        alert("コピーできたよ！ChatGPTに『OK』と一緒に貼り付けてね✨");
+      });
+    }
+    </script>
 
     <p style="margin-top:20px;font-size:14px;color:#555;">
       LUAとつながったら、すぐに診断結果をお届けするね🌙✨
