@@ -207,7 +207,7 @@ def push_followup(user_id):
         "💡 一緒に行動を進められる\n\n"
         "小さな一歩も、大きな夢も、みんなで応援し合える場所🌈\n"
         "あなたの挑戦も、ぜひ聞かせてね！\n\n"
-        "👉 今すぐ参加する: https://discord.gg/vthSzQTz"
+        "👉 今すぐ参加する: https://discord.gg/rUrJTQr8Tu"
     )
     return push_to_line(user_id, followup_text)
 
